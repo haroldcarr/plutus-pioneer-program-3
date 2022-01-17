@@ -1,0 +1,19 @@
+Pioneers Third Cohort
+
+- Discord
+  place to discuss course with others
+  https://discord.com/channels/826816523368005654/929960586362638476/929986352622239794%C2%A0
+
+- Canvas
+  where course materials aggregated
+  https://canvas.instructure.com/courses/4089198
+
+- Cardano Stack Exchange (CSE)
+  post questions and record solutions
+  https://cardano.stackexchange.com/
+  https://cardano.stackexchange.com/questions/tagged/plutus-pioneer-program?tab=Newest
+
+- Github
+  Plutus code for each module
+  https://github.com/input-output-hk/plutus-pioneer-program
+

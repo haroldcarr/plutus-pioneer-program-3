@@ -1,0 +1,106 @@
+------------------------------------------------------------------------------
+* Plutus Env: Setup Starter Pack
+
+https://docs.google.com/document/d/13112LHG9vVvNUs40oZSqZ-DF6_yFiT_SJZ2NaEmjMM4/edit#heading=h.hf7iqqtf4s2t
+
+https://playground.plutus.iohkdev.io/
+- easiest : the online playground
+
+** local Plutus development environment
+
+https://docs.plutus-community.com/
+- PROS : detailed setup guide for various OS (Linux, Mac, Windows)
+- CONS : later material (lectures and PAB related stuff) is mostly obsolete
+
+https://developers.cardano.org/docs/smart-contracts/plutus/
+- PROS : focused on big picture explanations of plutus
+- CONS : not user friendly
+
+https://github.com/input-output-hk/plutus-apps
+- PROS : the canonical source; sparse but reliable instructions on installing plutus applications
+         with NIX (e.g., Plutus Playground or Plutus PAB)
+         What the development team uses.
+- CONS : requires Nix
+
+https://github.com/input-output-hk/plutus-starter
+- PROS : for users of VSCode and Docker
+- CONS : ditto
+
+some of these may be out-of-date
+
+** Plutus Playground Local Instance
+
+To set up a local instance (assumes Nix already installed).
+
+This worked for
+- MacBook Pro (13-inch 2019, Four Thunderbolt 3 ports)
+- Processor 2.8 GHz Quad-Core Intel Core i7
+- Memory 16GB 2133 MHz LPDDR3
+- nix (Nix) 2.5.1
+
+from
+- https://github.com/renzwo/cardano-plutus-apps-install-m1
+- ff71ab6ddd158105ef413f1c8d8cb29bec9714b3
+
+edit =/etc/nix/nix.conf= to contain
+
+#+begin_example
+build-users-group = nixbld
+
+substituters        = https://hydra.iohk.io https://iohk.cachix.org https://cache.nixos.org/
+trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= iohk.cachix.org-1:DpRUyj7h7V830dp/i6Nti+NEO2/nhblbov/8MW7Rqoo= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
+system = x86_64-darwin
+extra-platforms = x86_64-darwin aarch64-darwin
+
+sandbox = false
+extra-sandbox-paths = /System/Library/Frameworks /System/Library/PrivateFrameworks /usr/lib /private/tmp /private/var/tmp /usr/bin/env
+experimental-features = nix-command
+extra-experimental-features = flakes
+#+end_example
+
+restart mac
+
+#+begin_example
+git clone https://github.com/input-output-hk/plutus-apps
+cd plutus-apps
+git checkout 829a409ba34bae36c6d99f50e099b0a177d76ceb
+# if segfault, try again:
+nix-build -A plutus-playground.server
+# if errors, try again
+nix-build -A plutus-playground.client
+nix-shell
+cd plutus-playground-server
+# if problems, try again
+GC_DONT_GC=1 plutus-playground-server
+# when success, will print:
+plutus-playground-server: for development use only
+[Info] Running: (Nothing,Webserver {_port = 8080, _maxInterpretationTime = 80s})
+Initializing Context
+Initializing Context
+Warning: GITHUB_CLIENT_ID not set
+Warning: GITHUB_CLIENT_SECRET not set
+Warning: JWT_SIGNATURE not set
+Interpreter ready
+#+end_example
+
+in another terminal
+
+#+begin_example
+cd plutus-apps
+nix-shell
+sudo npm install -g npm
+cd plutus-playground-client
+GC_DONT_GC=1 npm run start
+# when success, will print:
+webpack compiled with 1 warning
+ℹ ｢wdm｣: Compiled with warnings.
+#+end_example
+
+if the client takes to long, see renzwo about timeouts
+
+in browser
+
+#+begin_example
+https://localhost:8009/
+#+end_example

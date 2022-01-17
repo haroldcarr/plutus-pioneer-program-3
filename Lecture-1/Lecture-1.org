@@ -1,0 +1,215 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program
+
+------------------------------------------------------------------------------
+* Part 1 - Welcome and Introduction
+
+https://www.youtube.com/watch?v=X80uNXenWF4
+
+- Thursdays : lectures
+- Tuesdays  : Q&A
+
+------------------------------------------------------------------------------
+* Part 2 - The EUTxO-Model (Extended Unspent Transaction Output)
+
+https://www.youtube.com/watch?v=bfofA4MM0QE
+
+- outputs from previous TXs that have not been spent
+- can only use /complete/ UTXO as input
+- split done in outputs
+- sum of inputs = sum of outputs + TX fees (TX fees not shown below)
+  - exception to sum invariant : mint or burn new tokens
+
+*** UTxO model
+#+begin_example
+                    Alice signs Tx1                         both Alice & Bob sign Tx2
+
+...> Alice/100 ada -----> Tx1 -------> Alice/90 ada ----> |
+                           |                              |      /-----> Alice  / 35 ada
+                           + --------> Bob  /10 ada ----> | Tx2 -------> Bob    /  5 ada
+                                                          |      \-----> Charlie/110 ada
+...> Bob  / 50 ada -------------------------------------> |
+#+end_example
+
+*** EUTxO model
+
+instead of one condition in TX
+- address to PK to verify signature
+- Alice's signature
+replace
+- PK with script/contract that will determine if Tx is OK
+- signature by some data that justifies it is allowed to consume output (called "Redeemer")
+also arbitrary custom data on output
+
+bitcoin script context (little context)
+- all script sees is redeemer
+- script is on UTxO side
+- redeemer on input side
+- script gets redeemer, uses it to decide if OK to consume the UTxO
+
+plutus context (medium context)
+- cannot see whole blockchain
+- can see whole Tx that is being validated
+  -- all inputs/outputs
+- datum : piece of data associated with UTxO (besides ada value)
+
+ethereum script context (whole context)
+- script can see the entire state of blockchain
+- gives more abilities to the script
+- but difficult to predict what a script will do
+
+------------------------------------------------------------------------------
+* Part 3 - Building the Example Code
+
+https://www.youtube.com/watch?v=zPaDp4R9X7o
+
+for on-chain
+- https://github.com/input-output-hk/plutus
+
+for off-chain
+- https://github.com/input-output-hk/plutus-apps
+  - references plutus
+
+code for lectures
+- https://github.com/input-output-hk/plutus-pioneer-program
+  - code/week01
+
+how to checkout correct commit and build plutus-app
+
+------------------------------------------------------------------------------
+* Part 4 - Auction Contract in the EUTxO-Model
+
+https://www.youtube.com/watch?v=Bj6bqRGT1L0
+
+auction an NFT
+- exists exactly once
+- owner wants to auction
+- minimum bid
+- deadline
+
+UTxO at the auction script output
+value of UTxO is the NFT
+datum : initially nothing, later highest bidder
+
+in "real" blockchain, must have some Ada involved, but not used here for simplicity
+
+#+begin_example
+1
+                         bid
+Auction / NFT / Nothing -----> |
+                               | Tx1 ---> Auction / NFT / (Bob, 100 ada)
+Bob     / 100 ada -----------> |
+#+end_example
+
+As a redeemer, in order to unlock the original auction UTx), use a "BID"
+BID is just an algebraic data type containing auction info.
+
+#+begin_example
+2
+Charlie / 200 ada ------------------> |
+                                      |     /----> Auction / NFT / (Charlie, 200)
+                                bid   | Tx2
+Auction / NFT / (Bob, 100 ada) -----> |     \----> Bob     / 100 ada
+#+end_example
+
+Somebody has to explictly create Tx3 with redeemer "close"
+- must like Alice (who created the Auction/NFT in the first place) or Charlie, the highest bidder.
+
+#+begin_example
+3 (deadline reached)            close         /----> Charlie / NFT
+Auction / NFT / (Charlie, 200) -------> | Tx3
+                                              \----> Alice   / 200 ada
+#+end_example
+
+In case where no one bids, then Alice can create a TX with "close" redeemer and get NFT back.
+
+Plutus
+- on-chain
+  - validates Tx
+  - script in UTxO model
+  - hand-written Haskell code translated to Plutus "core"
+- off-chain
+  - constructs Tx that will pass validation
+  - runs in the Wallet
+
+------------------------------------------------------------------------------
+* Part 5 - Auction Contract on the Playground
+
+https://www.youtube.com/watch?v=K61Si6iQ-Js
+
+- load =EnglishAuction.hs= into editer
+  - remove module/exports
+
+- Compile
+
+- Simulate
+
+#+begin_example
+                                            Add Wallet
+Wallet 1              Wallet 2              Wallet 3
+Lovelace 100000000    Lovelace 100000000    Lovelace 100000000
+T        1            T        0            T        0
+#+end_example
+
+- Wallet 1 : start
+#+begin_example
+spDeadline       1596059101999
+spMinBid         10000000
+spCurrency
+unCurrencySymbol 66
+spToken
+unTokenName      T
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait Forward
+Slots            1
+#+end_example
+
+- Wallet 2 : bid
+#+begin_example
+bpCurrency
+unCurrencySymbol 66
+bpToken
+unTokenName      T
+bpBid            10000000
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait Forward
+Slots            1
+#+end_example
+
+- Wallet 3 : bid
+#+begin_example
+bpCurrency
+unCurrencySymbol 66
+bpToken
+unTokenName      T
+bpBid            15000000
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait Until
+Slots            11
+#+end_example
+
+- Wallet 1 : close
+#+begin_example
+cpCurrency
+unCurrencySymbol 66
+cpToken
+unTokenName      T
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait For
+Slots            1
+#+end_example
+
+- Evaluate
