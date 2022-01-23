@@ -1,0 +1,256 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program
+
+------------------------------------------------------------------------------
+* Part 1 - Triggering Change
+
+https://www.youtube.com/watch?v=BEr7lcCPjnA
+
+For anything to happen on the blockchain, it must be triggered by a TX.
+TXs always come from the outside from a user, from a wallet.
+
+------------------------------------------------------------------------------
+* Part 2 - Low Level, Untyped Validation Scripts
+
+https://www.youtube.com/watch?v=xgnmMl-eIIM
+
+** review of lecture 1 material
+
+on chain
+- validation
+off chain
+- lives in wallet
+- constructs/submits TXs
+
+focus on on chain part:
+
+simple UTxO model: signatures + TXs
+- address given by public key (or its hash)
+- it UTxO sits at such a PK address,
+  then a TX can consume that UTxO as an input
+  if the signature belonging to the PK is included in the TX
+
+(e)UTxO model: signatures + TXs + scripts + redeemers + datum + context
+- adds new type of addresses
+  - script addresses that can run arbitrary logic
+  - for a TX to consume a UTxO sitting at a script address
+    the script is run to decide if the TX is valid
+- adds : input : adds "redeemer"
+  - arbitrary data
+- adds : output : arbitrary data called "datum"
+  - state that sits at the UTxO
+- adds : context
+  - the TX that is being validated,
+    including all inputs and outputs
+
+plutus script receives
+- datum (sitting at the UTxO
+- redeemer (coming from the input)
+- context
+
+** datum, redeemer, context types
+
+- same data type used for all three at low-level impl of Plutus
+  - https://playground.plutus.iohkdev.io/doc/haddock/plutus-tx/html/PlutusTx.html
+  - ~BuiltInData~
+  - no constructor; instead conversion functions from/to ~Data~
+  - ~Data~ similar to JSON format
+    - arbitrary data expressed in terms of ~Data~
+- can use custom data types for datum and redeemer
+- but /performance implications for custom types/ (e.g., de/serialization)
+  - /can make a difference in practice/
+- course will use custom types for convenience
+
+** =Gift.hs=
+
+See annotated [[./Gift.hs][=Gift.hs=]]
+
+- load =Gift.hs= in playground
+- Compile
+- Simulate
+- Add Wallet
+- set all 3 wallets to =Lovelace 10000000=
+
+- Wallet 1 : give
+#+begin_example
+4000000
+#+end_example
+
+- Wallet 2 : give
+#+begin_example
+6000000
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait For
+Slots            1
+#+end_example
+
+- Wallet 3 : grab
+
+- Add Wait Action
+#+begin_example
+Wait For
+Slots            1
+#+end_example
+
+- Evaluate
+
+=Slot 0, Tx 0=
+- genesis TX that distributes funds
+
+=Slot 1=
+- two TXs in same slot (since no =Wait For= was indicated)
+- for each TX
+  - input is Ada (from Wallet)
+  - outputs
+    - fee to run TX
+    - balance back to wallet after substracting gift abount and fee
+    - script with given amount
+
+=Slot 2, Tx 0=
+- inputs are the two script outputs from previous two TXs
+- outputs are the fee and the amount (minus fee) given to wallet 3
+  - note higher fee because a script was executed
+
+** =Burn.hs=
+
+Same as =Gift=, except the validator always fails.
+
+Mean that any funds given to this script are locked away forever : BURNT
+
+- Return to Editor
+- load =Burn.hs= in playground
+- Compile
+- Simulate
+  - has same info, since endpoints have not changed
+- Evaluate
+
+=Slot 0, Tx 0=
+- genesis TX that distributes funds
+
+=Slot 1=
+- two =give= TXs in same slot (since no =Wait For= was indicated)
+  - both succeed
+- for each TX
+  - input is Ada (from Wallet)
+  - outputs
+    - fee to run TX
+    - balance back to wallet after substracting gift abount and fee
+    - script with given amount
+
+- note there is \no\ =Slot 2= =grab= TX since the script fails
+
+** =FortyTwo.hs=
+
+Same as =Gift=, except
+- only passes if /redeemer/ is =I 42=
+- so =grab= updated to accept redeemer/Integer
+
+- Return to Editor
+- load =FortyTwo.hs= in playground
+- Compile
+- Simulate
+  - note : does NOT have same info, since endpoints have changed
+- Evaluate
+
+- load =Gift.hs= in playground
+- Compile
+- Simulate
+- set both wallets
+  - =Lovelace 10000000=
+
+- Wallet 1 : give
+#+begin_example
+3000000
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait For
+Slots            1
+#+end_example
+
+- Wallet 3 : grab
+#+begin_example
+100
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait For
+Slots            1
+#+end_example
+
+- Evaluate
+
+Note: the =grab= TX does not succeed.
+- see =wrong redeemer= in =Trace=
+
+- Return to Editor
+- Simulate
+- change =Wallet 2: grab= to =42=
+- Evaluate
+- =grab= TX does succeeds
+
+------------------------------------------------------------------------------
+* Part 3 - High Level, Typed Validation Scripts
+
+https://www.youtube.com/watch?v=HoB_PqeZPNc
+
+** =Typed.hs=
+
+Same as =Gift=m, except uses custom types instead of ~BuiltInData~.
+
+See annotated [[./Typed.hs][=Typed.hs=]]
+
+Run it in the playground exactly like the =FortyTwo.hs= example.
+
+Type classes to convert from/to ~BuiltInData~
+- https://playground.plutus.iohkdev.io/doc/haddock/plutus-tx/html/PlutusTx-IsData-Class.html
+- note : the custom types used in this example have instances defined
+
+** =IsData.hs=
+
+Like =Typed.hs=, except custom redeemer.
+
+Instances generated by use of ~PlutusTx.unstableMakeIsData ''MySillyRedeemer~.
+
+Works in playground just like the =FortyTwo.hs= example.
+
+------------------------------------------------------------------------------
+* Part 4 - Summary
+
+https://www.youtube.com/watch?v=V5P2gKHos48
+
+- =Gift.hs=
+  - validator that always succeeds (ignores all args)
+- =Burn.hs=
+  - validator that always fails (ignores all args)
+- =FortyTwo.hs=
+  - validator that only succeeds if redeemer is =I 42=
+  - uses ~BuiltInData~
+- =Typed.hs=
+  - validator that only succeeds if redeemer is =42=
+  - uses existing instances to convert =Integer= to ~BuiltInData~
+- =IsData.hs=
+  - validator that only succeeds if redeemer is =MySillyRedeemer 42=
+  - uses function to create instances for =MySillyRedeemer=
+
+------------------------------------------------------------------------------
+* Part 5 - Homework
+
+https://www.youtube.com/watch?v=_r-EpXzQGKo
+
+=Homework1.hs=
+- redeemer is now =(Bool, Bool)=
+- do =undefined= / =FIX ME!=
+- off-chain code is already done
+
+=Homework2.hs=
+- redeemer is now a custom =data= type to represent the two =Bool=
+- do =undefined= / =FIX ME!=
+- off-chain code is already done
+

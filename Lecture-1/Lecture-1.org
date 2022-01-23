@@ -164,7 +164,7 @@ unTokenName      T
 
 - Add Wait Action
 #+begin_example
-Wait Forward
+Wait For
 Slots            1
 #+end_example
 
@@ -179,7 +179,7 @@ bpBid            10000000
 
 - Add Wait Action
 #+begin_example
-Wait Forward
+Wait For
 Slots            1
 #+end_example
 
