@@ -45,7 +45,7 @@ simple UTxO model: signatures + TXs
     including all inputs and outputs
 
 plutus script receives
-- datum (sitting at the UTxO
+- datum (sitting at the UTxO)
 - redeemer (coming from the input)
 - context
 
@@ -141,7 +141,7 @@ Mean that any funds given to this script are locked away forever : BURNT
     - balance back to wallet after substracting gift abount and fee
     - script with given amount
 
-- note there is \no\ =Slot 2= =grab= TX since the script fails
+- note there is /no/ =Slot 2= =grab= TX since the script fails
 
 ** =FortyTwo.hs=
 
@@ -202,7 +202,7 @@ https://www.youtube.com/watch?v=HoB_PqeZPNc
 
 ** =Typed.hs=
 
-Same as =Gift=m, except uses custom types instead of ~BuiltInData~.
+Same as =Gift=, except uses custom types instead of ~BuiltInData~.
 
 See annotated [[./Typed.hs][=Typed.hs=]]
 
