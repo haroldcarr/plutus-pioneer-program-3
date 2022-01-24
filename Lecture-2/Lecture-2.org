@@ -173,7 +173,7 @@ Wait For
 Slots            1
 #+end_example
 
-- Wallet 3 : grab
+- Wallet 2 : grab
 #+begin_example
 100
 #+end_example
