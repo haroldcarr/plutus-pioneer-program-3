@@ -1,3 +1,5 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
 ------------------------------------------------------------------------------
 * Plutus Env: Setup Starter Pack
 
@@ -26,9 +28,10 @@ https://github.com/input-output-hk/plutus-starter
 - PROS : for users of VSCode and Docker
 - CONS : ditto
 
-some of these may be out-of-date
+some of the above may be out-of-date
 
-** Plutus Playground Local Instance
+------------------------------------------------------------------------------
+* initial setup for Plutus Playground local instance
 
 To set up a local instance (assumes Nix already installed).
 
@@ -40,7 +43,7 @@ This worked for
 
 from
 - https://github.com/renzwo/cardano-plutus-apps-install-m1
-- ff71ab6ddd158105ef413f1c8d8cb29bec9714b3
+- =ff71ab6ddd158105ef413f1c8d8cb29bec9714b3=
 
 edit =/etc/nix/nix.conf= to contain
 
@@ -104,3 +107,175 @@ in browser
 #+begin_example
 https://localhost:8009/
 #+end_example
+
+------------------------------------------------------------------------------
+<<weekly-steps>>
+* weekly steps (after doing above initial steps)
+
+credit to =tinito387= in discord
+
+** pull and checkout tag
+
+#+begin_example
+# 1
+cd plutus-pioneers-program
+
+# 2
+git pull
+
+# 3 (0Y == number of the week/lecture)
+cd plutus-pioneers-program/code/week0Y
+
+# 4
+# get the tag in cabal.project for source-repository-package .../plutus-apps.git
+
+# 5
+cd plutus-apps
+
+# 6
+git checkout main
+
+# 7
+git pull
+
+# 8
+git checkout 'tag from step 4'
+#+end_example
+
+** playground
+
+The following steps are only needed to use the playground.
+
+They are not needed for using =cabal repl=.
+
+#+begin_example
+# 9
+nix-build -A plutus-playground.server
+
+# 10
+nix-shell
+
+# 11
+cd plutus-playground-server/
+
+# 12 run Plutus Playground Server
+plutus-playground-server
+
+--------------------------
+# 13 in another terminal
+cd plutus-apps
+
+# 14
+nix-shell
+
+# 15
+cd plutus-playground-client
+
+# 16 start Plutus Playground Client
+npm run start
+#+end_example
+
+** =cabal repl=
+
+To do =cabal repl= for a particular week:
+
+#+begin_example
+# 17 in another terminal
+cd plutus-apps
+
+# 18
+nix-shell
+
+# 19
+cd plutus-pioneers-program
+
+# 20
+cd code/week0Y/
+
+# 20 a, b : do these steps if #21 and/or #22 fail
+cabal clean
+cabal update
+
+# 21
+cabal build
+
+# 22
+cabal repl
+#+end_example
+
+------------------------------------------------------------------------------
+* a problem and solution/hack
+
+
+When I was trying to do =cabal repl= for Week4, I had the following problem:
+
+#+begin_example
+> cd plutus-apps
+
+> git checkout ea1bfc6a49ee731c67ada3bfb326ee798001701a
+HEAD is now at ea1bfc6a4 SCP-3305 reverted #57 (#275)
+
+> nix-shell
+...
+
+[nix-shell:~/plutus-apps]$ cd ../plutus-pioneer-program/code/week04/
+
+# note: I also tried
+# cabal clean; cabal update; cabal build
+# before this next step, but ended up with the same problem
+
+[nix-shell:~/plutus-pioneer-program/code/week04]$ cabal repl
+Build profile: -w ghc-8.10.4.20210212 -O1
+In order, the following will be built (use -v for more details):
+ - cardano-ledger-shelley-0.1.0.0 (lib) (requires build)
+ - plutus-core-0.1.0.0 (lib) (requires build)
+ ...
+Starting     plutus-core-0.1.0.0 (lib)
+Starting     cardano-ledger-shelley-0.1.0.0 (lib)
+Building     cardano-ledger-shelley-0.1.0.0 (lib)
+Installing   cardano-ledger-shelley-0.1.0.0 (lib)
+Completed    cardano-ledger-shelley-0.1.0.0 (lib)
+
+Failed to build plutus-core-0.1.0.0. The failure occurred during the configure
+step.
+Build log (
+/Users/hcarr/.cabal/logs/ghc-8.10.4.20210212/plts-cr-0.1.0.0-ae5e7239.log ):
+Configuring library for plutus-core-0.1.0.0..
+cabal: The program 'happy' version >=1.17.1 is required but the version of
+/Users/hcarr/.cabal/store/ghc-8.10.4.20210212/hppy-1.20.0-a2383844/bin/happy
+could not be determined.
+
+cabal: Failed to build plutus-core-0.1.0.0 (which is required by
+plutus-pioneer-program-week04-0.1.0.0). See the build log above for details.
+#+end_example
+
+So I tried to execute the =happy=. I see a complaint:
+
+#+begin_example
+> /Users/hcarr/.cabal/store/ghc-8.10.4.20210212/hppy-1.20.0-a2383844/bin/happy
+dyld: Library not loaded: /nix/store/xxda2m8nqqrjygyppid1pff15kxf3fg4-libffi-3.4.2/lib/libffi.8.dylib
+#+end_example
+
+Looking in =/nix/store=, I see that =xxda...= does not exist.
+
+I do not know how to make it exist.
+
+But I see other versions of =libffi-3.4.2= are in the store, so I tried (yuck):
+
+#+begin_example
+> sudo ln -s /nix/store/4jm4isrbhbdx9wgkbsgkqgrdwqcyail3-libffi-3.4.2 /nix/store/xxda2m8nqqrjygyppid1pff15kxf3fg4-libffi-3.4.2
+#+end_example
+
+Then tried =happy= again:
+
+#+begin_example
+> /Users/hcarr/.cabal/store/ghc-8.10.4.20210212/hppy-1.20.0-a2383844/bin/happy
+Usage: happy [OPTION...] file
+...
+#+end_example
+
+Now =happy= is happy and =cabal build= and =cabal repl= work.
+
+If anyone knows how to correctly install that particular hash version of =libffi=,
+please let me know.
+

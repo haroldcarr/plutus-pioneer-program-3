@@ -195,7 +195,7 @@ bpBid            15000000
 - Add Wait Action
 #+begin_example
 Wait Until
-Slots            11
+Slot             11
 #+end_example
 
 - Wallet 1 : close

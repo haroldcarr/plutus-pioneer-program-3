@@ -1,0 +1,341 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program
+
+------------------------------------------------------------------------------
+* Part 1 - Configuring Playground Time Out
+
+https://www.youtube.com/watch?v=sLMhsqiWeGU
+
+for playground on local machine
+
+#+begin_example
+plutus-playground-server --help
+
+# specify a 120 second timeout
+plutus-playground-server -i 120s
+#+end_example
+
+------------------------------------------------------------------------------
+* Part 2 - Script Contexts
+
+https://www.youtube.com/watch?v=B66xLrGXwmw
+
+lecture 1:
+- to unlock a script address, the script attached to the address is run with
+  with 3 inputs : datum, redeemer and context
+lecture 2:
+- low level impl of inputs represeted by ~BuiltInData~
+  (similar in concept to a JSON representation)
+- typed version of inputs via ~FromData~ / ~ToData~ typeclasses
+
+Examples so far only looked at datum and redeemer.
+
+~ScriptContext~ : defined in ~plutus-ledger-api~ package
+(included in this week's ~cabal~ file)
+
+https://playground.plutus.iohkdev.io/doc/haddock/plutus-ledger-api/html/Plutus-V1-Ledger-Contexts.html
+
+#+begin_example
+ScriptContext
+  scriptContextTxInfo  :: TxInfo
+  scriptContextPurpose :: ScriptPurpose
+
+ScriptPurpose
+  Minting    CurrencySymbol      -- to define native token : how to mint or burn
+  Spending   TxOutRef            -- to validate spending input for a TX
+  Rewarding  StakingCredential
+  Certifying DCert
+
+-- describes the pending TX
+TxInfo
+  TxInfo
+    txInfoInputs      :: [TxInInfo]                     -- TX inputs
+    txInfoOutputs     :: [TxOut]                        -- TX outputs
+    txInfoFee         :: Value                          -- fee paid by this TX
+    txInfoMint        :: Value                          -- Value minted by this TX if positive
+                                                        -- Value burned if negativ
+    txInfoDCert       :: [DCert]                        -- digests of certificates included in this TX
+    txInfoWdrl        :: [(StakingCredential, Integer)]	-- withdrawals
+    txInfoValidRange  :: POSIXTimeRange                 -- valid range for the TX
+    txInfoSignatories :: [PubKeyHash]                   -- signatures provided with the TX,
+                                                        -- attested that they all signed the TX
+    txInfoData        :: [(DatumHash, Datum)]
+    txInfoId          :: TxId                           -- Hash of the pending TX (excluding witnesses)
+#+end_example
+
+------------------------------------------------------------------------------
+* Part 3 - Handling Time
+
+https://www.youtube.com/watch?v=mf06ll-4j2w
+
+In Cardano, can run TX in wallet first to ensure it succeeds,
+to avoid submitting a TX that will fail to on-chain, where it incur a TX fee.
+
+can specify /time/
+- TX valid between given start/end time
+- ~txInfoValidRange~ : time interval
+
+on-chain : time range is checked before running validation script
+
+default time range : infinite
+
+Plutus uses POSIX time.
+
+Ouroboros does not use POSIX time.  It uses "slots".
+- each slot gets a slot leader that produces a block
+- each slot is 1 second
+ - might change in the future
+ - via hard-fork with 36 hour advance notice
+
+when converting to/from slot/posix
+- slot length in POSIX "known" for next 36 hours
+- so end range can be indefinite or at most 36 hours in future
+
+------------------------------------------------------------------------------
+* Part 4 - A Vesting Example
+
+https://www.youtube.com/watch?v=ae7U_yKIQ0Y
+
+Uses ~ScriptContext~ and /time/.
+
+Gift of ADA to a person
+- they then own it
+- only want person to have access when they reach a certain age
+
+contract uses ~ScriptContext~
+- see annotated : [[./Vesting.hs][Vesting.hs]]
+- uses
+  - on-chain
+    - ~txSignedBy~ /::/ ~TxInfo -> PubKeyHash -> Bool~
+    - =txInfoValidRange=
+    - =contains= (interval)
+  - off-chain
+    - =Constraints.mustValidateIn=
+
+** in a shell
+
+To determine values used in playground simulation.
+
+#+begin_example
+cabal repl
+
+-----------------------------------------------------
+-- to determine wallet info
+
+import Wallet.Emulator
+
+mockWalletPaymentPubKeyHash $ knownWallet 1
+-- a2c20c77887ace1cd986193e4e75babd8993cfd56995cd5cfce609c2
+
+mockWalletPaymentPubKeyHash $ knownWallet 2
+-- 80a4f45b56b88d1139da23bc4c3c75ec6d32943c087f250b86193ca7
+
+mockWalletPaymentPubKeyHash $ knownWallet 3
+-- 2e0ad60c3207248cecd47dbde3d752e0aad141d6b8f81ac2c6eca27c
+
+-----------------------------------------------------
+-- to determine POSIX time of slots in the playground
+
+import Ledger.Time
+import Ledger.TimeSlot
+import Data.Default
+
+slotToBeginPOSIXTime def 10
+-- 1596059101000
+slotToBeginPOSIXTime def 20
+-- 1596059111000
+#+end_example
+
+<<vesting-playground>>
+** in the playground
+
+- load =Vesting.hs= in playground
+
+- Add Wallet
+
+- Wallet 1 : give (to Wallet 2)
+#+begin_example
+getPubKeyHash   80a4f45b56b88d1139da23bc4c3c75ec6d32943c087f250b86193ca7
+gpDeadline      1596059101000
+gpAmount        30000000
+#+end_example
+
+- Add Wait Action
+  - note: waiting is necessary because of the way the contracts are written
+#+begin_example
+Wait For
+Slots            1
+#+end_example
+
+- Wallet 1 : give (to Wallet 2)
+#+begin_example
+getPubKeyHash   80a4f45b56b88d1139da23bc4c3c75ec6d32943c087f250b86193ca7
+gpDeadline      1596059111000
+gpAmount        30000000
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait For
+Slots            1
+#+end_example
+
+- Wallet 1 : give (to Wallet 3)
+#+begin_example
+getPubKeyHash   2e0ad60c3207248cecd47dbde3d752e0aad141d6b8f81ac2c6eca27c
+gpDeadline      1596059101000
+gpAmount        30000000
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait Until
+Slot             11 -- after slot 10 deadline; before slot 20 deadline
+                    -- *** RUN A SECOND TIME WITH THIS SET TO 21 ***
+#+end_example
+
+- Wallet 2 : grab
+- Wallet 3 : grab
+
+- Add Wait Action
+#+begin_example
+Wait For
+Slots            5
+#+end_example
+
+------------------------------------------------------------------------------
+* Part 5 - Parameterized Contracts
+
+https://www.youtube.com/watch?v=XqFILXV_ACM
+
+In =Vesting.hs= the datum did not change.
+Could have baked the info in datum into the script itself and not sued datum.
+
+Instead of using datum, using parameter(s) to contract.
+
+[[./Parameterized.hs][Parameterized.hs]] (=Vesting.hs= modified to use parameters)
+
+Run in playground like =Vesting.hs=, except
+
+- Wallet 2 : grab =1596059101000=
+- Wallet 3 : grab =1596059101000=
+- Wallet 2 : grab =1596059111000=
+
+------------------------------------------------------------------------------
+* Part 6 - Deploying to the Cardano Testnet
+
+https://www.youtube.com/watch?v=ABtffZPoUqU
+
+via the CLI
+
+** download cardano node
+
+- =github.com/input-output-hk/cardano-node=
+- click : =Release Cardano Node 1.33.0 Latest=
+- click : +Downloads=
+  - lars uses =Hydra= binaries
+    - download/install : =cardano-node-linux=
+
+** configure
+
+#+begin_example
+git clone https://github.com/input-output-hk/plutus-pioneer-program
+cd plutus-pioneer-program/code/week03/testnet
+#+end_example
+
+The =testnet=  directory contains configuration files that were downloaded via
+(you do /not/ need to do this):
+
+- =github.com/input-output-hk/cardano-node=
+- click : +Downloads=
+  - click : =Configuration Files=
+    - get : =config=, =shellyGenesis=, =alonzoGenesis=, =topology=
+      - put them in the =testnet= directory created above
+      - do /not/ need : =db sync config= nore =test config=
+
+... TODO ...
+
+------------------------------------------------------------------------------
+* Part 7 - Homework
+
+https://www.youtube.com/watch?v=GGUT2O_0urQ
+
+** =Homework1.hs=
+
+There are now two beneficiaries:
+
+#+begin_example
+data VestingDatum = VestingDatum
+    { beneficiary1 :: PaymentPubKeyHash
+    , beneficiary2 :: PaymentPubKeyHash
+    , deadline     :: POSIXTime
+    } deriving P.Show
+#+end_example
+
+Beneficiary1 can grab the gift up to the deadline.
+
+Beneficiary2 can grab the gift after the deadline.
+
+Setup such that if beneficiary2 misses the deadline,
+then the money goes back to the giver,
+which is beneficiary1.
+
+Homework : write =mkValidator= (everything else already done, including off-chain code).
+
+*** playground
+
+- Wallet 1 : give (to Wallet 2)
+#+begin_example
+getPubKeyHash   80a4f45b56b88d1139da23bc4c3c75ec6d32943c087f250b86193ca7
+gpDeadline      1596059101000 -- slot 10
+gpAmount        50000000
+#+end_example
+
+- Wallet 2 : give (to Wallet 1)
+#+begin_example
+getPubKeyHash   a2c20c77887ace1cd986193e4e75babd8993cfd56995cd5cfce609c2
+gpDeadline      1596059096000 -- slot  5
+gpAmount        50000000
+#+end_example
+
+- Add Wait Action
+#+begin_example
+Wait Until
+Slot            6
+#+end_example
+
+- Wallet 2 : grab
+
+- Add Wait Action
+#+begin_example
+Wait For
+Slots            2
+#+end_example
+
+Wallet 2 will get both gifts
+- the one from Wallet 1
+- and the one from Wallet 2->1, since 1 missed the deadline.
+
+* =Homework2.hs=  (6:07)
+
+split
+- beneficiary in parameter
+- deadline in datum
+
+Homework : write =FIX ME=, =IMPLEMENT ME=, etc (off-chain code already done).
+
+Run the same as [[vesting-playground][vesting playground]].
+
+
+------------------------------------------------------------------------------
+* Part 8 - Summary
+
+https://www.youtube.com/watch?v=uyaPtayBRb8
+
+- ~ScriptContext~
+- time sensitive contracts
+- parameterized contracts
+- how to use Cardano CLI to interact with Plutus
+
+

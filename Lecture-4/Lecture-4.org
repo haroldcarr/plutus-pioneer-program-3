@@ -1,0 +1,252 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program
+
+------------------------------------------------------------------------------
+* Part 1 - Introduction
+
+https://www.youtube.com/watch?v=gxMW9uXTEj4
+
+How to write off-chain Plutus code.
+
+Everything used in on-chain code /must/ be =INLINABLE=.
+Means on-chain code is a restricted subset of Haskell resulting in "simple" functions.
+
+Off-chain code can use more of the power of Haskell and its libraries.
+
+Off-chain code written in the "contract monad".
+
+------------------------------------------------------------------------------
+* Part 2 - Monads
+
+https://www.youtube.com/watch?v=f2w-MB3X4a0
+
+------------------------------------------------------------------------------
+* Part 3 - The EmulatorTrace Monad
+
+https://www.youtube.com/watch?v=qoUfgaHs1CI
+
+- =Contract w s e a= monad
+  - defines code that will run in the wallet
+- =EmulatorTrace a= monad
+  - enables writing code to exercise contracts instead of using the playground.
+
+https://playground.plutus.iohkdev.io/doc/haddock/plutus-contract/html/Plutus-Trace-Emulator.html
+
+[[https://playground.plutus.iohkdev.io/doc/haddock/plutus-contract/html/Plutus-Trace-Emulator.html#g:5][Running traces]]
+
+- =runEmulatorTrace= /::/ =EmulatorConfig -> EmulatorTrace () -> ([EmulatorEvent], Maybe EmulatorErr, EmulatorState)=
+
+#+begin_example
+data EmulatorConfig
+constructor
+ EmulatorConfig
+  _initialChainState :: InitialChainState -- State of blockchain at beginning of simulation.
+  _slotConfig        :: SlotConfig        -- Start time of slot 0 and length of one slot.
+  _feeConfig         :: FeeConfig         -- Fee of a transaction.
+
+type InitialChainState   = Either InitialDistribution TxPool
+type InitialDistribution = Map Wallet Value
+type TxPool              = [Tx]
+
+data SlotConfig
+constructor
+ SlotConfig
+  scSlotLength   :: Integer   -- Length (in milliseconds) of one slot
+  scSlotZeroTime :: POSIXTime -- Beginning of slot 0 (in milliseconds)
+
+data FeeConfig
+-- fee for a TX is typically: 'fcConstantFee + fcScriptsFeeFactor * SIZE_DEPENDANT_SCRIPTS_FEE.
+constructor
+ FeeConfig
+  fcConstantFee      :: Ada    -- Constant fee per transaction in lovelace
+  fcScriptsFeeFactor :: Double -- Factor by which to multiply the size-dependent scripts fee
+#+end_example
+
+** in a shell
+
+see "weekly steps" in [[../0-README-setup.org][0-README-setup]] for how steps /before/ =cabal repl=
+
+#+begin_example
+cd plutus-pioneer-program/code/week04
+cabal repl
+
+import Plutus.Trace.Emulator
+import Data.Default
+
+-- default has
+-- - 10 wallets, each with 100 Ada
+-- - slot is thousand milliseconds (i.e., 1 second)
+-- - ...
+def :: EmulatorConfig
+-- EmulatorConfig { ...
+
+-- simulation that does not do anything
+runEmulatorTrace def (return ())
+-- ...
+#+end_example
+
+- =runEmulatorTraceIO= /::/ =EmulatorTrace () -> IO ()=
+  - Runs runEmulatorTrace with default config.
+  - Prints selection of events to stdout.
+- =runEmulatorTraceIO'= /::/ =TraceConfig -> EmulatorConfig -> EmulatorTrace () -> IO ()=
+
+#+begin_example
+runEmulatorTraceIO (return ())
+-- ...
+#+end_example
+
+** =Week04.Trace=
+
+see annotated [[./Trace.hs][Trace.hs]]
+
+#+begin_example
+cd plutus-pioneer-program/code/week04
+cabal repl
+
+:l src/Week04/Trace.hs
+
+test
+
+-- search for
+-- - Receive endpoint call
+-- - CONTRACT LOG
+-- - USER LOG
+-- - Final balances
+-- note : wallets seem to be sorted by hash
+#+end_example
+
+Change =Trace.hs=
+- from =waitUntilSlot 20=
+- to =waitUntilSlot 10=
+and run again.
+- should see =CONTRACT LOG: "no gifts available"=
+
+------------------------------------------------------------------------------
+* Part 4 - The Contract Monad
+
+https://www.youtube.com/watch?v=yKX5Ce8Y0VQ
+
+=Contract w s e a=
+- =w= : to communicate messages of type =w= between different contracts or "outside"
+- =s= : what endpoints are available in this contract
+- =e= : type of error messages
+- =a= : result
+
+see annotated [[./Trace.hs][Trace.hs]]
+
+#+begin_example
+cd plutus-pioneer-program/code/week04
+cabal repl
+
+----- try myContract1
+
+-- with BOOM! commented out
+:l src/Week04/Contract.hs
+
+test1
+-- search for CONTRACT LOG: "hello" ...
+
+-- with BOOM! uncommented
+:l src/Week04/Contract.hs
+
+test1
+-- search for CONTRACT STOPPED WITH ERROR ...
+
+
+----- try myContract2
+
+:r
+
+test2
+-- search for CONTRACT LOG: "caught: BOOM!"
+
+
+----- try myContract3
+
+:r
+
+test3
+-- search for
+-- - Contract instance started
+-- - Receive endpoint call
+-- - Contract log
+-- - Contract instance stopped
+
+----- try myContract3
+
+:r
+
+test4
+-- search for
+-- - SlotAdd Slot
+-- - USER LOG
+#+end_example
+
+- give data from outside  to contract via =callEndpoint=
+- give data from contract to outside  via =tell=
+
+------------------------------------------------------------------------------
+* Part 5 - Homework & Summary
+
+`payContract` : make a payment to a public key address
+- block until ~@"pay"~ endpoint called
+- contract returns the endpoint's parameters
+- construct TX with ~mustPayToPubKey~
+- ~submitTx~
+  - takes ~mustPayToPubKey~ constraint and turns into TX
+  - to pay that receipient the given amount, the funds must come from submitter's wallet
+  - tries to balance TX by finding appropriate inputs in submitter's wallet to pay fee
+    - possibly creating change output to submitter's wallet
+- recursive call to self
+
+** homework task 1
+
+Write =payTrace= =EmulatorTrace= to exercise =payContract=.
+
+`payTrace`
+- given two `Integer` inputs
+- `activateContractWallet` for Wallet 1 / `payContract`
+- `callEndpoint` ~@"pay"~ twice
+  - `ppRecipient` is Wallet (both times)
+  - once with each `Integer` input
+
+`PayTest1`
+- makes payments of 10 and 20 Ada
+
+`PayTest2`
+- makes payments of 1000 and 20 Ada
+
+#+begin_example
+cabal repl
+:l src/Homework.hs
+
+payTest1
+-- see Wallet 1 has decreased appropriately
+-- see Wallet 2 has increased appropriately
+
+payTest2
+-- see that Wallet balances do NOT change
+#+end_example
+
+`payTest2`
+- fails because running with `def` Wallet values (100 Ada)
+  that are not enough to cover amounts specified in this test
+- fails during `submitTx` during "balancing"
+- neither Tx will succeed because contract throws an error on the first Tx
+  causing not to recurse
+
+** homework task 2
+
+Modify `payContract`
+- to handle the exception
+- catch and log
+- then recurse
+
+Then, in repl, 2nd payment should succeed.
+
+** summary
+
+- monads; how they work; why useful
+- =EmulatorTrace= monad : script scenarios (rather than use playground)
+- =Contract= monad : enables writing off-chain code

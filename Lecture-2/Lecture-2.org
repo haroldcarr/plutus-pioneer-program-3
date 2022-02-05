@@ -254,3 +254,8 @@ https://www.youtube.com/watch?v=_r-EpXzQGKo
 - do =undefined= / =FIX ME!=
 - off-chain code is already done
 
+------------------------------------------------------------------------------
+* Q&A
+
+- input  : redeemer : think of as a kind of key
+- output : datum    : script state
