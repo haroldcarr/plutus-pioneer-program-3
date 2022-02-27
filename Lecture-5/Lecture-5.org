@@ -146,7 +146,7 @@ minting policy scripts only have
 
 do not have datum since datum sits at something being spent, which is not the case here
 
-See annotated file:./Free.hs
+see annotated [[file:./Free.hs][Free.hs]]
 
 #+begin_src
 cabal repl
@@ -164,7 +164,7 @@ test
 * Part 4 - A More Realistic Minting Policy
 https://www.youtube.com/watch?v=4SROikF8JwE
 
-see annotated file:./Signed.hs
+see annotated [[file:./Signed.hs][Signed.hs]]
 
 #+begin_src
 cabal repl
