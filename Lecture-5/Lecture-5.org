@@ -1,0 +1,278 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-5
+
+how to mint native tokens and NFTs
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+------------------------------------------------------------------------------
+* Part 1 - Start
+
+https://www.youtube.com/watch?v=mGPqi9m0EPw
+
+How to define a minting policy to determine conditions for minting and burning of native tokens.
+
+Lecture 1 created had an NFT, a value that is not Ada.
+- NFT created out of thin air.
+
+In real Cardano, there are no other native tokens other than Ada.
+
+------------------------------------------------------------------------------
+* Part 2 - Values
+
+https://www.youtube.com/watch?v=4iNTgjovMRg
+
+https://playground.plutus.iohkdev.io/doc/haddock/plutus-ledger-api/html/
+
+https://playground.plutus.iohkdev.io/doc/haddock/plutus-ledger-api/html/Plutus-V1-Ledger-Value.html
+
+Ada and custom tokens represeted by =AssetClass=
+
+#+begin_example
+newtype AssetClass
+Constructors
+  AssetClass
+    unAssetClass :: (CurrencySymbol, TokenName)
+#+end_example
+
+** Minting policies
+
+each native token (including Ada) identified by
+- =CurrencySymbol=
+  - =newtype= =BuildinByteString=
+  - must be hexadecimal hash of a script
+    - script is minting policy
+    - the =CurrencySymbol= is locked up (i.e., the hash)
+    - corresponding script must be contained in TX the creates/burns native tokens
+      - script is executed along with other validation scripts
+      - purpose of minting scripts is to decide if TX has right to mint/burn
+- =TokenName=
+  - =newtype= =BuildinByteString=
+
+#+begin_example
+newtype Value
+- a cryptocurrency value
+Constructors
+  Value
+    -- map to a quantity of that currency
+    -- i.e., how many units of asset class
+    getValue :: Map CurrencySymbol (Map TokenName Integer)
+#+end_example
+
+A TX cannot create or delete tokens.
+Everything that goes in, comes out, minus fees.
+
+** repl
+
+#+begin_src
+cabal repl
+import Plutus.V1.Ledger.Value
+import Plutus.V1.Ledger.Ada
+:set -XOverloadedStrings
+
+-- an empty string
+-- NOT the hash of any script, implying NO script
+-- means ADA can never be minted/burned
+-- all ADA that exists came from genesis block
+:t adaSymbol
+adaSymbol
+
+-- an empty string
+:t adaToken
+adaToken
+
+:t lovelaceValueOf
+lovelaceValueOf 123
+
+-- adding
+lovelaceValueOf 123 <> lovelaceValueOf 10
+
+-- to create a native value
+:t singleton
+
+-- must be hexadecimal    arbitary    how many "coins"
+--         v              v
+singleton "a8ff"          "ABC"       7
+
+let v = singleton "a8ff" "ABC" 7 <> lovelaceValueOf 42 <> singleton "a8ff" "XYZ" 7
+v
+
+-- get value
+valueOf v "a8ff" "XYZ"
+valueOf v "a8ff" "should get zero back"
+
+-- flatten map of maps to list of triples
+:t flattenValue
+flattenValue v
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 3 - A Simple Minting Policy
+
+https://www.youtube.com/watch?v=DBUdFsZpW7A
+
+review : how validation works
+- when we do not have a public key address
+- have a script address and UTxO that sits at that script address
+- TX that tries to consume that UTxO as input
+- then for each script input the corresponding validation script is run
+- script inputs
+  - datum    : from the UTxO
+  - redeemer : from the input
+  - context
+    - https://playground.plutus.iohkdev.io/doc/haddock/plutus-ledger-api/html/Plutus-V1-Ledger-Contexts.html
+    - =ScriptPurpose= : =Minting=, =Spending=, =Rewarding=, =Certifying=
+      - examples so far have been =Spending= the UTxO being consumed
+    - =TxInfo= : info about TX being validated
+
+minting policies triggered if =TxInfo.txInfoMint= contains a non-zero value
+
+value can be a bag of different asset classes (different currency symbols / token names)
+
+for each symbol (being forged) in value, corresponding minting policy script is run
+- if value is non-zero
+- each currency symbol is hash of a minting policy script for that currency
+- =TxInfo.ScriptPurpose= will be =Minting=
+- /all/ scripts must pass; if one fails, entire TX fails
+
+minting policy scripts only have
+- redeemer
+- context
+
+do not have datum since datum sits at something being spent, which is not the case here
+
+See annotated file:./Free.hs
+
+#+begin_src
+cabal repl
+:l Week05.Free
+
+curSymbol
+
+test
+-- should see
+-- - one wallet with 444 (and less Ada than non-used wallets, because TX fees)
+-- - one wallet with 333 (ditto)
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 4 - A More Realistic Minting Policy
+https://www.youtube.com/watch?v=4SROikF8JwE
+
+see annotated file:./Signed.hs
+
+#+begin_src
+cabal repl
+:l Week05.Signed
+
+test
+-- should see
+-- - one wallet with 444 (and less Ada than non-used wallets, because TX fees)
+-- - one wallet with 333 (ditto)
+
+-- note: the currency symbols in the two wallets are different.
+-- That was not the case in Part 3, where they are constant.
+-- In Part 3, currency symbol was a function of no args, so constant.
+-- In Part 4, currency symbol is a function taking pub key hash,
+--            so different for each wallet.
+--            That means they are two completely different coins
+--            (aka tokens or asset classes)
+#+end_src
+
+Example analogous to where only central bank mint money or take out of circulation.
+
+Here, only owner of pub key hash can do it.
+
+------------------------------------------------------------------------------
+* Part 5 - NFT's
+
+https://www.youtube.com/watch?v=2lKN0ZL_EQU
+
+NFT : non-fungible tokens : can only exist once : only ONE coin in existence
+
+Minting examples in Part 3 and 4 are NOT exampless of NFTs,
+since possible to mint/burn any number.
+
+TX
+- each is unique
+  - because of fees : always need input that provides fees
+    - that input is a previous UTxO
+    - so a different TX hash
+  - without fees a TX could have zero inputs and only outputs without value
+    - so TX would have the same hash
+- UTxO(s) is/are output(s) of TX
+
+UTxO
+- each is unique
+- can only exist once
+- to identify a specific UTxO
+  - need to identity the TX that created it : TX ID, and
+  - which output of the TX
+
+NFT : name a specific UTxO as parameter to minting policy
+- in policy, check for that specific UTxO
+
+See annotated file:./NFT.hs
+
+#+begin_src
+cabal repl
+:l Week05.NFT
+test
+-- two wallets each with 1 ABC but different script hashes (so different NFTs)
+-- and each with less Ada than unused wallets
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 6 - Homework
+
+https://www.youtube.com/watch?v=j7yT2OqGY6U
+
+** Week05.Homework1
+
+Implement a "Mary" era style monetary minting policy.
+- Specify signatures that must be present in the minting TX.
+- Can specify deadlines : minting must not happen after the deadline.
+
+Policy should have two parameters
+- pub key hash
+- POXIS time
+
+Minting should only succeed if
+- TX signed by given pub key
+- before deadline
+
+Off chain code already implemented.
+- caveat/antipattern: the way time is done
+- time validation in POSIX time, blockchain in "slot" time
+
+=test= written so first "mint" succeeds, second fails.
+
+Should end up with 555 tokens.
+
+Log output should show second fails.
+
+#+begin_src
+cabal repl
+:l Week05.Homework1
+test
+#+end_src
+
+** Week05.Homework2
+
+Modify =NFT.hs= so token name is a constant empty byte string.
+
+Therefore =TokenName= no longer needs to be a parameter.
+
+Emulator trace ends with two wallets with different NFT (because different hashs)
+and less Ada.
+
+#+begin_src
+cabal repl
+:l Week05.Homework2
+test
+#+end_src
