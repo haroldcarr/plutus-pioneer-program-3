@@ -53,7 +53,7 @@ edit =/etc/nix/nix.conf= to contain
  (eepitch-shell)
 #+end_comment
 
-#+begin_example
+#+begin_src
 build-users-group = nixbld
 
 substituters        = https://hydra.iohk.io https://iohk.cachix.org https://cache.nixos.org/
@@ -66,11 +66,11 @@ sandbox = false
 extra-sandbox-paths = /System/Library/Frameworks /System/Library/PrivateFrameworks /usr/lib /private/tmp /private/var/tmp /usr/bin/env
 experimental-features = nix-command
 extra-experimental-features = flakes
-#+end_example
+#+end_src
 
 restart mac
 
-#+begin_example
+#+begin_src
 git clone https://github.com/input-output-hk/plutus-apps
 cd plutus-apps
 git checkout 829a409ba34bae36c6d99f50e099b0a177d76ceb
@@ -91,11 +91,11 @@ Warning: GITHUB_CLIENT_ID not set
 Warning: GITHUB_CLIENT_SECRET not set
 Warning: JWT_SIGNATURE not set
 Interpreter ready
-#+end_example
+#+end_src
 
 in another terminal
 
-#+begin_example
+#+begin_src
 cd plutus-apps
 nix-shell
 sudo npm install -g npm
@@ -104,15 +104,15 @@ GC_DONT_GC=1 npm run start
 # when success, will print:
 webpack compiled with 1 warning
 ℹ ｢wdm｣: Compiled with warnings.
-#+end_example
+#+end_src
 
 if the client takes to long, see renzwo about timeouts
 
 in browser
 
-#+begin_example
+#+begin_src
 https://localhost:8009/
-#+end_example
+#+end_src
 
 ------------------------------------------------------------------------------
 <<weekly-steps>>
@@ -122,7 +122,7 @@ credit to =tinito387= in discord
 
 ** pull and checkout tag
 
-#+begin_example
+#+begin_src
 # 1
 cd plutus-pioneers-program
 
@@ -146,7 +146,7 @@ git pull
 
 # 8
 git checkout 'tag from step 4'
-#+end_example
+#+end_src
 
 ** playground
 
@@ -154,7 +154,7 @@ The following steps are only needed to use the playground.
 
 They are not needed for using =cabal repl=.
 
-#+begin_example
+#+begin_src
 # 9
 nix-build -A plutus-playground.server
 
@@ -179,13 +179,13 @@ cd plutus-playground-client
 
 # 16 start Plutus Playground Client
 npm run start
-#+end_example
+#+end_src
 
 ** =cabal repl=
 
 To do =cabal repl= for a particular week:
 
-#+begin_example
+#+begin_src
 # 17 in another terminal
 cd plutus-apps
 
@@ -207,7 +207,7 @@ cabal build
 
 # 22
 cabal repl
-#+end_example
+#+end_src
 
 ------------------------------------------------------------------------------
 * a problem and solution/hack
@@ -215,7 +215,7 @@ cabal repl
 
 When I was trying to do =cabal repl= for Week4, I had the following problem:
 
-#+begin_example
+#+begin_src
 > cd plutus-apps
 
 > git checkout ea1bfc6a49ee731c67ada3bfb326ee798001701a
@@ -253,14 +253,14 @@ could not be determined.
 
 cabal: Failed to build plutus-core-0.1.0.0 (which is required by
 plutus-pioneer-program-week04-0.1.0.0). See the build log above for details.
-#+end_example
+#+end_src
 
 So I tried to execute the =happy=. I see a complaint:
 
-#+begin_example
+#+begin_src
 > /Users/hcarr/.cabal/store/ghc-8.10.4.20210212/hppy-1.20.0-a2383844/bin/happy
 dyld: Library not loaded: /nix/store/xxda2m8nqqrjygyppid1pff15kxf3fg4-libffi-3.4.2/lib/libffi.8.dylib
-#+end_example
+#+end_src
 
 Looking in =/nix/store=, I see that =xxda...= does not exist.
 
@@ -268,17 +268,17 @@ I do not know how to make it exist.
 
 But I see other versions of =libffi-3.4.2= are in the store, so I tried (yuck):
 
-#+begin_example
+#+begin_src
 > sudo ln -s /nix/store/4jm4isrbhbdx9wgkbsgkqgrdwqcyail3-libffi-3.4.2 /nix/store/xxda2m8nqqrjygyppid1pff15kxf3fg4-libffi-3.4.2
-#+end_example
+#+end_src
 
 Then tried =happy= again:
 
-#+begin_example
+#+begin_src
 > /Users/hcarr/.cabal/store/ghc-8.10.4.20210212/hppy-1.20.0-a2383844/bin/happy
 Usage: happy [OPTION...] file
 ...
-#+end_example
+#+end_src
 
 Now =happy= is happy and =cabal build= and =cabal repl= work.
 

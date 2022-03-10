@@ -1,0 +1,84 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-6
+
+How to interact with Cardano testnet.
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+------------------------------------------------------------------------------
+* Part 1 - Introduction
+
+https://www.youtube.com/watch?v=TfWKxdli4eI
+
+Lecture-3 showed how to interact with testnet via CLI.
+
+This lecture will do interact with testnet again via
+- CLI
+- Plutus Application Backend (PAB).
+
+Example will be minting native tokens (like in Lecture-5).
+
+------------------------------------------------------------------------------
+* Part 2 - The Minting Policy
+
+https://www.youtube.com/watch?v=w7_27sQIqkY
+
+=Week06.Token.OnChain=
+- similar to Lecture-5 NFT example
+- except takes number of coins to mint
+
+------------------------------------------------------------------------------
+* Part 3 - Minting with the CLI
+
+https://www.youtube.com/watch?v=kfvzrC9J02k
+
+=Week06.Utils=
+- writeMintingPolicy
+  - serializes to disk
+
+=testnet/nodesock=
+- the socket that provides the interface from the node
+=testnet/*.[add | skey | vkey]=
+- public/private keys and addresses
+- =v= : verification
+- =s= : signing
+
+=query-key1.sh=
+- command : =query utxo=
+- =$MAGIC= : testnet or mainnet
+- address : to lookup UTxOs for
+
+=env.sh=
+- defines env vars : =MAGIC=, etc.
+
+#+begin_src
+. env.sh
+./query-key1.sh
+#+end_src
+
+... TODO
+
+------------------------------------------------------------------------------
+* Part 4 - Deployment Scenarios
+
+https://www.youtube.com/watch?v=tW7uoY16gC0
+
+https://plutus.readthedocs.io/en/latest/
+
+How to do what was done with CLI with PAB.
+
+------------------------------------------------------------------------------
+* Part 5 - The Contracts
+
+https://www.youtube.com/watch?v=JgNhY_uuuGA
+
+------------------------------------------------------------------------------
+* Part 6 - Minting with the PAB
+
+------------------------------------------------------------------------------
+* Part 7 - Summary

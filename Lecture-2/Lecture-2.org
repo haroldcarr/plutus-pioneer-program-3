@@ -2,6 +2,9 @@
 
 Source : https://github.com/input-output-hk/plutus-pioneer-program
 
+- =BuiltInData= : low-level (but faster) untyped data
+- higher-level typed data (that gets converted from/to =BuiltInData=)
+
 ------------------------------------------------------------------------------
 * Part 1 - Triggering Change
 

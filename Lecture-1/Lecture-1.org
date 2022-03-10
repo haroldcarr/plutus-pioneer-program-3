@@ -2,6 +2,11 @@
 
 Source : https://github.com/input-output-hk/plutus-pioneer-program
 
+- Extended Unspent Transaction Output (EUTxO) model
+- building example code with repos : =plutus=, =plutus-apps=, =plutus-pioneer-program=
+- auction contract
+- playground
+
 ------------------------------------------------------------------------------
 * Part 1 - Welcome and Introduction
 

@@ -1,6 +1,17 @@
 #+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
 
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
 Source : https://github.com/input-output-hk/plutus-pioneer-program
+
+- script context
+- handling time
+- parameterized contracts
+- deploying to Cardano testnet via CLI
 
 ------------------------------------------------------------------------------
 * Part 1 - Configuring Playground Time Out
@@ -231,30 +242,219 @@ via the CLI
 
 ** download cardano node
 
-- =github.com/input-output-hk/cardano-node=
-- click : =Release Cardano Node 1.33.0 Latest=
-- click : +Downloads=
-  - lars uses =Hydra= binaries
-    - download/install : =cardano-node-linux=
+- https://github.com/input-output-hk/cardano-node
+- click : =Releases=
+- =Cardano Node 1.33.0=
+- click : =Downloads=
+- click : =Hydra binaries=
+  - lars : download/install : =cardano-node-linux=
+  - I used : https://hydra.iohk.io/build/9941204/download/1/cardano-node-1.33.0-macos.tar.gz
 
-** configure
+#+begin_src
+cd ~/Cardano
+mkdir cardano-node-1.33.0
+cd cardano-node-1.33.0
+tar xvf ~/Downloads/cardano-node-1.33.0-macos.tar.gz
+./cardano-node --version
+#+end_src
 
-#+begin_example
-git clone https://github.com/input-output-hk/plutus-pioneer-program
-cd plutus-pioneer-program/code/week03/testnet
-#+end_example
+** configuration files
 
-The =testnet=  directory contains configuration files that were downloaded via
-(you do /not/ need to do this):
+/You do not need to do this./
 
-- =github.com/input-output-hk/cardano-node=
-- click : +Downloads=
-  - click : =Configuration Files=
-    - get : =config=, =shellyGenesis=, =alonzoGenesis=, =topology=
-      - put them in the =testnet= directory created above
-      - do /not/ need : =db sync config= nore =test config=
+The =plutus-pioneer-program/code/week03/testnet= directory contains
+configuration files that were downloaded via
 
-... TODO ...
+- https://github.com/input-output-hk/cardano-node
+- click : =Releases=
+- =Cardano Node 1.33.0=
+- click : =Downloads=
+- click : =Configuration Files=
+  - get =testnet=
+    - =config=, =bytonGenesis=, =shellyGenesis=, =alonzoGenesis=, =topology=
+      - do /not/ need : =db sync config= nor =rest config=
+    - put them in =plutus-pioneer-program/code/week03/testnet=
+
+** =start-node-testnet.sh=
+
+in =plutus-pioneer-program/code/week03/testnet=
+
+references above config files
+
+#+begin_src
+export C=~/Cardano
+export CN=${C}/cardano-node-1.33.0
+export PP3=${C}/plutus-pioneer-program/code/week03
+export PPME3=${C}/plutus-pioneer-program-me/Lecture-3
+export PP3TN=${PP3}/testnet
+export PPME3TN=${PPME3}/testnet
+mkdir  ${PPME3TN}
+export PP3SRC=${PP3}/src/Week03
+cd ${C}
+mkdir cardano-node-db
+cp ${PP3TN}/start-node-testnet.sh ${PPME3TN}
+cd ${PPME3TN}
+ln -s ${PP3TN}/testnet-alonzo-genesis.json  .
+ln -s ${PP3TN}/testnet-byron-genesis.json   .
+ln -s ${PP3TN}/testnet-config.json          .
+ln -s ${PP3TN}/testnet-shelley-genesis.json .
+ln -s ${PP3TN}/testnet-topology.json        .
+#+end_src
+
+Edit ${PPME3TN}/start-node-testnet.sh
+- to use =cardano-node= executable from installed location (or put it in =PATH=)
+  - =~/Cardano/cardano-node-1.33.0/cardano-node=
+  - =--database-path ~/Cardano/cardano-node-db=
+
+#+begin_src
+# will take hours until the test-net data is downloaded and up-to-date
+${PPME3TN}/start-node-testnet.sh
+#+end_src
+
+** setup keys, addresses and do funding
+
+#+begin_src
+${CN}/cardano-cli                 --help
+${CN}/cardano-cli address         --help
+${CN}/cardano-cli address key-gen --help
+${CN}/cardano-cli address build   --help
+
+# need 2 wallets for parameterized contract example
+${CN}/cardano-cli address key-gen \
+     --verification-key-file ${PPME3TN}/01.vkey \
+     --signing-key-file      ${PPME3TN}/01.skey
+
+${CN}/cardano-cli address key-gen \
+     --verification-key-file ${PPME3TN}/02.vkey \
+     --signing-key-file      ${PPME3TN}/02.skey
+
+# need payment addresses for the above key pairs
+# ${PP3TN}/testnet-shelley-genesis.json contains "networkMagic": 1097911063
+
+export MAGIC=1097911063
+
+${CN}/cardano-cli address build \
+     --payment-verification-key-file ${PPME3TN}/01.vkey \
+     --testnet-magic ${MAGIC} \
+     --out-file ${PPME3TN}/01.addr
+
+${CN}/cardano-cli address build \
+     --payment-verification-key-file ${PPME3TN}/02.vkey \
+     --testnet-magic ${MAGIC} \
+     --out-file ${PPME3TN}/02.addr
+
+# need test ADA via
+# https://testnets.cardano.org/en/testnets/cardano/tools/faucet/
+# cut/paste 01.addr contents into form; request funds
+# ditt      02.addr
+# to see if it worked:
+${CN}/cardano-cli query --help
+${CN}/cardano-cli query utxo --help
+# to do next, cardano-node must be running and:
+export CARDANO_NODE_SOCKET_PATH=${PPME3TN}/node.socket
+ls -alF ${CARDANO_NODE_SOCKET_PATH}
+
+# note: cardano-node must be fully synced to see the result
+${CN}/cardano-cli query utxo --address $(cat ${PPME3TN}/01.addr) --testnet-magic ${MAGIC}
+
+# To fund 02.addr have to wait 24 hours after funding 01.addr (unless you have an API key).
+
+# Workaround : use cardano-cli to make TX that sends ADA from 01.addr to 02.addr
+cp ${PP3TN}/send.sh ${PPME3TN}
+# ${PPME3TN}/send.sh
+# - EDIT : to point to cardano-cli executable
+# - EDIT : tx-in
+#          to be result for above `query`
+# - build automatically calculates fees, make an output for change
+cd ${PPME3TN}
+./send.sh
+
+# see if it worked (my have to wait for results to properly show)
+${CN}/cardano-cli query utxo --address $(cat ${PPME3TN}/01.addr) --testnet-magic ${MAGIC}
+${CN}/cardano-cli query utxo --address $(cat ${PPME3TN}/02.addr) --testnet-magic ${MAGIC}
+#+end_src
+
+** use Plutus with cardano-cli 16:20
+
+*** serialize Plutus types to disk
+
+#+begin_src
+cat ${PP3SRC}/Deploy.hs
+#+end_src
+
+uses =Cardano.Api=
+- same as =cardano-cli= uses
+- functionality to communicate with nodes
+- has a different (but similar) data type than Plutus
+
+=Deploy=
+- converts Plutus data to Cardano.Api data to JSON.
+
+#+begin_src
+# assumes correct tag already checked out
+cd ~/Cardano/plutus-apps
+nix-shell
+
+cd ${PP3}
+cabal clean
+cabal update
+cabal build
+cabal repl
+
+:! pwd
+writeUnit
+:! ls -alF testnet/unit.json
+:! cat testnet/unit.json
+:! mv testnet/unit.json ${PPME3TN}
+:q
+
+# 19:20
+cp ${PP3SRC}/Deploy.hs ${PPME3}
+rm ${PP3SRC}/Deploy.hs
+cd ${PP3SRC}
+ln -s ${PPME3}/Deploy.hs .
+${CN}/cardano-cli address key-hash \
+     --payment-verification-key-file ${PPME3TN}/02.vkey \
+     --out-file ${PPME3TN}/02.pkh
+cat ${PPME3TN}/02.pkh
+# EDIT: ${PPME3}/Deploy.hs beneficiary to have contents of 02.pkh
+
+# get deadline (a bit in the future): https://www.epochconverter.com/
+# EDIT: Deploy.hs deadline to that value
+
+# need address corresponding to the script
+
+cd ${PP3}
+cabal repl
+writeVestingValidator
+:! cat testnet/vesting.plutus
+:! mv  testnet/vesting.plutus ${PPME3TN}
+:q
+
+cd ${PPME3TN}
+${CN}/cardano-cli address build-script --help
+${CN}/cardano-cli address build-script \
+     --script-file vesting.plutus \
+     --testnet-magic ${MAGIC} \
+     --out-file ${PPME3TN}/vesting.addr
+cat ${PPME3TN}/vesting.addr
+
+# give functionality
+
+cp ${PP3TN}/give.sh ${PPME3TN}
+# ${PPME3TN}/give.sh
+# - EDIT: tx-in to have TxHash from:
+${CN}/cardano-cli query utxo --address $(cat ${PPME3TN}/01.addr) --testnet-magic ${MAGIC}
+cd ${PPME3TN}
+./give.sh
+### ERROR
+# ./give.sh: line 8: 34601 Segmentation fault: 11  ~/Cardano/cardano-node-1.33.0/cardano-cli transaction build --alonzo-era --testnet-magic 1097911063 --change-address $(cat 01.addr) --tx-in 0758f77442aa52f96c960735434398f0c70371f3bab3e8a20283019b3d857758#0 --tx-out "$(cat vesting.addr) 200000000 lovelace" --tx-out-datum-hash-file unit.json --out-file tx.body
+
+# check that it worked
+${CN}/cardano-cli query utxo --address $(cat vesting.addr) --testnet-magic ${MAGIC}
+
+... TODO
+#+end_src
 
 ------------------------------------------------------------------------------
 * Part 7 - Homework
