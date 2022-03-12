@@ -2,6 +2,8 @@
 
 Source : https://github.com/input-output-hk/plutus-pioneer-program
 
+- EmulatorTrace monad (enables programmatic testing, rather than using playground)
+
 ------------------------------------------------------------------------------
 * Part 1 - Introduction
 

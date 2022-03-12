@@ -2,7 +2,7 @@
 
 Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-6
 
-How to interact with Cardano testnet.
+How to interact with Cardano testnet via CLI and PAB
 
 #+begin_comment
  (eepitch-shell)

@@ -1,0 +1,29 @@
+My executable notes on the [[https://github.com/input-output-hk/plutus-pioneer-program][Plutus Pioneer Program]], cohort 3.
+
+(Note: "executable" in emacs via [[https://github.com/edrx/eev][eev]].)
+
+- [[./0-README-communication-channels.org][communicate with Plutus program and fellow pioneers]]
+
+- [[./0-README-setup.org][how to setup an plutus/cardano environment]]
+
+- [[./Lecture-1/Lecture-1.org][lecture 1]]
+  - Extended Unspent Transaction Output (EUTxO) model
+  - building example code with repos : =plutus=, =plutus-apps=, =plutus-pioneer-program=
+  - auction contract
+  - playground
+- [[./Lecture-2/Lecture-2.org][lecture 2]]
+  - =BuiltInData= : low-level (but faster) untyped data
+  - higher-level typed data (that gets converted from/to =BuiltInData=)
+- [[./Lecture-3/Lecture-3.org][lecture 3]]
+  - script context
+  - handling time
+  - parameterized contracts
+  - deploying to Cardano testnet via CLI
+- [[./Lecture-4/Lecture-4.org][lecture 4]]
+  - EmulatorTrace monad (enables programmatic testing, rather than using playground)
+- [[./Lecture-5/Lecture-5.org][lecture 5]]
+  - how to mint native tokens and NFTs (test with EmulatorTrace)
+- [[./Lecture-6/Lecture-6.org][lecture 6]]
+  - interact with Cardano testnet via CLI and PAB
+- 7 tbd
+- 8 tbd
