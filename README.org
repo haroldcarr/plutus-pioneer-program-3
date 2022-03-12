@@ -2,6 +2,8 @@ My executable notes on the [[https://github.com/input-output-hk/plutus-pioneer-p
 
 (Note: "executable" in emacs via [[https://github.com/edrx/eev][eev]].)
 
+Contents
+
 - [[./0-README-communication-channels.org][communicate with Plutus program and fellow pioneers]]
 
 - [[./0-README-setup.org][how to setup an plutus/cardano environment]]
