@@ -10,6 +10,25 @@ How to interact with Cardano testnet.
  (eepitch-shell)
 #+end_comment
 
+#+begin_src
+export C=~/Cardano
+export CN=${C}/cardano-node-1.33.0
+export PATH=${CN}:${PATH}
+
+export PPME3=${C}/plutus-pioneer-program-me/Lecture-3
+export PPME3TN=${PPME3}/testnet
+export CARDANO_NODE_SOCKET_PATH=${PPME3TN}/node.socket
+
+export PP6=${C}/plutus-pioneer-program/code/week06
+export PPME6=${C}/plutus-pioneer-program-me/Lecture-6
+export PP6TN=${C}/plutus-pioneer-program/code/week06/testnet
+export PPME6TN=${C}/plutus-pioneer-program-me/Lecture-6/testnet
+mkdir  ${PPME6TN}
+export PP6SRC=${PP6}/src/Week06
+
+export MAGIC='--testnet-magic 1097911063'
+#+end_src
+
 ------------------------------------------------------------------------------
 * Part 1 - Introduction
 
@@ -17,18 +36,21 @@ https://www.youtube.com/watch?v=TfWKxdli4eI
 
 Lecture-3 showed how to interact with testnet via CLI.
 
-This lecture will do interact with testnet again via
+This lecture will interact with testnet again via
 - CLI
-- Plutus Application Backend (PAB).
+- Plutus Application Backend (PAB)
 
-Example will be minting native tokens (like in Lecture-5).
+Example : minting native tokens (like in Lecture-5).
 
 ------------------------------------------------------------------------------
 * Part 2 - The Minting Policy
 
 https://www.youtube.com/watch?v=w7_27sQIqkY
 
-=Week06.Token.OnChain=
+#+begin_src
+tree ${PP6SRC}
+cat  ${PP6SRC}/Token/OnChain.hs
+#+end_src
 - similar to Lecture-5 NFT example
 - except takes number of coins to mint
 
@@ -37,31 +59,133 @@ https://www.youtube.com/watch?v=w7_27sQIqkY
 
 https://www.youtube.com/watch?v=kfvzrC9J02k
 
-=Week06.Utils=
-- writeMintingPolicy
-  - serializes to disk
+#+begin_src
+# serializes script to disk
+cat ${PP6SRC}/Utils.hs | grep writeMintingPolicy
+#+end_src
 
-=testnet/nodesock=
-- the socket that provides the interface from the node
-=testnet/*.[add | skey | vkey]=
-- public/private keys and addresses
+MintingPolicy has 3 parameters
+- ref to UTxO being consumed =TxOutRef=
+  - https://playground.plutus.iohkdev.io/doc/haddock/plutus-ledger-api/html/Plutus-V1-Ledger-Contexts.html
+- token name
+- amount
+
+#+begin_src
+# start cardano-node
+cd ${PPME3TN}
+./start-node-testnet.sh
+
+# the socket that provides the interface from the node
+ls -alF ${CARDANO_NODE_SOCKET_PATH}
+#+end_src
+
+Need one key pair in this lecture.
+Use the pair from lecture 3.
+
+#+begin_src
+ls -alF ${PPME3TN}/*key*
+cp ${PPME3TN}/01.?key ${PPME6TN}
+cp ${PPME3TN}/01.addr ${PPME6TN}
+cd ${PP6TN}
+ln -s ${PPME6TN}/01.addr
+ln -s ${PPME6TN}/01.skey
+ln -s ${PPME6TN}/01.vkey
+#+end_src
+
+#+begin_src
+ls -alF ${PP6}
+ls -alF ${PP6TN}
+#+end_src
+- =add skey vkey=
+  - public/private keys and addresses
 - =v= : verification
 - =s= : signing
 
-=query-key1.sh=
+#+begin_src
+cat ${PP6}/query-key1.sh
+#+end_src
 - command : =query utxo=
 - =$MAGIC= : testnet or mainnet
 - address : to lookup UTxOs for
 
-=env.sh=
-- defines env vars : =MAGIC=, etc.
+#+begin_src
+cat ${PP6}/env.sh
+#+end_src
+- defines =MAGIC=, etc.
+- /I do not use this/ -- I define things in this file
 
 #+begin_src
-. env.sh
+# 10:36
+cd ${PP6}
 ./query-key1.sh
-#+end_src
 
-... TODO
+# turn <TxHash>#0 into =TxOutRef= using
+cat ${PP6SRC}/Utils.hs | grep unsafeReadTxOutRef
+
+# assumes correct checked out a correct tag
+cd ${C}/plutus-apps
+nix-shell
+cd ${PP6}
+cabal clean
+cabal update
+cabal build
+cabal repl
+
+import Week06.Utils        --   v the TxHash return from 10:36 query
+unsafeReadTxOutRef "d5fd871e73b8384b6d6c8f6d99587e0aa01d61ca8f1912faf6017acbeb968621#0"
+:q
+
+# serialize the minting policy
+cat ${PP6}/app/token-policy.hs
+
+cabal exec token-policy -- \
+      ${PPME6}/policy.plutus \
+      'd5fd871e73b8384b6d6c8f6d99587e0aa01d61ca8f1912faf6017acbeb968621#0' \
+      123456 \
+      PPP
+cat ${PPME6}/policy.plutus
+
+# 16:47
+# mint via CLI
+
+# v is what to mint
+cat ${PP6}/mint-token-cli.sh
+
+# 20:22
+cat ${PP6SRC}/Utils.hs | grep unsafeTokenNameToHex
+cat ${PP6}/app/token-name.hs
+cabal exec token-name -- PPP
+
+# 30:45
+./query-key1.sh
+
+./mint-token-cli.sh \
+  d5fd871e73b8384b6d6c8f6d99587e0aa01d61ca8f1912faf6017acbeb968621#0 \
+  123456 \
+  PPP \
+  testnet/01.addr \
+  testnet/01.skey
+
+# =>
+oref: d5fd871e73b8384b6d6c8f6d99587e0aa01d61ca8f1912faf6017acbeb968621#0
+amt: 123456
+tn: PPP
+address file: testnet/01.addr
+signing key file: testnet/01.skey
+currency symbol: 64cb0805e86ab19fd59e5401ed0da3df3f43af73d9a6f79279ca469d
+token name (hex): 505050
+minted value: 123456 64cb0805e86ab19fd59e5401ed0da3df3f43af73d9a6f79279ca469d.505050
+address: addr_test1vzuwm56nwvp8f3p55tav68nltjlv686hmeu6wlwc5vdjxvqezrrny
+Estimated transaction fee: Lovelace 343733
+Transaction successfully submitted.
+
+# 31:53
+# wait for next block (usually 20 seconds)
+
+./query-key1.sh
+
+# also see via : https://explorer.cardano-testnet.iohkdev.io/en.html
+#+end_src
 
 ------------------------------------------------------------------------------
 * Part 4 - Deployment Scenarios

@@ -13,6 +13,19 @@ Source : https://github.com/input-output-hk/plutus-pioneer-program
 - parameterized contracts
 - deploying to Cardano testnet via CLI
 
+#+begin_src
+export C=~/Cardano
+export CN=${C}/cardano-node-1.34.1
+export PATH=${CN}:${PATH}
+export PP3=${C}/plutus-pioneer-program/code/week03
+export PPME3=${C}/plutus-pioneer-program-me/Lecture-3
+export PP3TN=${PP3}/testnet
+export PPME3TN=${PPME3}/testnet
+export PP3SRC=${PP3}/src/Week03
+export CARDANO_NODE_SOCKET_PATH=${PPME3TN}/node.socket
+export MAGIC=1097911063
+#+end_src
+
 ------------------------------------------------------------------------------
 * Part 1 - Configuring Playground Time Out
 
@@ -245,16 +258,21 @@ via the CLI
 - https://github.com/input-output-hk/cardano-node
 - click : =Releases=
 - =Cardano Node 1.33.0=
+  - the one when the lecture was created
+    - it got a seg fault when trying 'grab.sh'
+- =Cardano Node 1.34.1=
+  - this one worked
 - click : =Downloads=
 - click : =Hydra binaries=
   - lars : download/install : =cardano-node-linux=
-  - I used : https://hydra.iohk.io/build/9941204/download/1/cardano-node-1.33.0-macos.tar.gz
+  - I used
+    - https://hydra.iohk.io/build/13065616/download/1/cardano-node-1.34.1-macos.tar.gz
 
 #+begin_src
 cd ~/Cardano
-mkdir cardano-node-1.33.0
-cd cardano-node-1.33.0
-tar xvf ~/Downloads/cardano-node-1.33.0-macos.tar.gz
+mkdir cardano-node-1.34.1
+cd    cardano-node-1.34.1
+tar xvf ~/Downloads/cardano-node-1.34.1-macos.tar.gz
 ./cardano-node --version
 #+end_src
 
@@ -267,7 +285,7 @@ configuration files that were downloaded via
 
 - https://github.com/input-output-hk/cardano-node
 - click : =Releases=
-- =Cardano Node 1.33.0=
+- =Cardano Node 1.34.0=
 - click : =Downloads=
 - click : =Configuration Files=
   - get =testnet=
@@ -282,14 +300,7 @@ in =plutus-pioneer-program/code/week03/testnet=
 references above config files
 
 #+begin_src
-export C=~/Cardano
-export CN=${C}/cardano-node-1.33.0
-export PP3=${C}/plutus-pioneer-program/code/week03
-export PPME3=${C}/plutus-pioneer-program-me/Lecture-3
-export PP3TN=${PP3}/testnet
-export PPME3TN=${PPME3}/testnet
 mkdir  ${PPME3TN}
-export PP3SRC=${PP3}/src/Week03
 cd ${C}
 mkdir cardano-node-db
 cp ${PP3TN}/start-node-testnet.sh ${PPME3TN}
@@ -299,15 +310,13 @@ ln -s ${PP3TN}/testnet-byron-genesis.json   .
 ln -s ${PP3TN}/testnet-config.json          .
 ln -s ${PP3TN}/testnet-shelley-genesis.json .
 ln -s ${PP3TN}/testnet-topology.json        .
-#+end_src
 
-Edit ${PPME3TN}/start-node-testnet.sh
-- to use =cardano-node= executable from installed location (or put it in =PATH=)
-  - =~/Cardano/cardano-node-1.33.0/cardano-node=
-  - =--database-path ~/Cardano/cardano-node-db=
+# Edit ${PPME3TN}/start-node-testnet.sh
+# - --database-path ~/Cardano/cardano-node-db
+# - ensure ${CN} is in ${PATH}
 
-#+begin_src
-# will take hours until the test-net data is downloaded and up-to-date
+# Will take hours until the test-net data is downloaded and up-to-date.
+# creates srwx------   1 <user> <group> <date> <time> node.socket=
 ${PPME3TN}/start-node-testnet.sh
 #+end_src
 
@@ -439,7 +448,7 @@ ${CN}/cardano-cli address build-script \
      --out-file ${PPME3TN}/vesting.addr
 cat ${PPME3TN}/vesting.addr
 
-# give functionality
+# give
 
 cp ${PP3TN}/give.sh ${PPME3TN}
 # ${PPME3TN}/give.sh
@@ -447,13 +456,53 @@ cp ${PP3TN}/give.sh ${PPME3TN}
 ${CN}/cardano-cli query utxo --address $(cat ${PPME3TN}/01.addr) --testnet-magic ${MAGIC}
 cd ${PPME3TN}
 ./give.sh
-### ERROR
-# ./give.sh: line 8: 34601 Segmentation fault: 11  ~/Cardano/cardano-node-1.33.0/cardano-cli transaction build --alonzo-era --testnet-magic 1097911063 --change-address $(cat 01.addr) --tx-in 0758f77442aa52f96c960735434398f0c70371f3bab3e8a20283019b3d857758#0 --tx-out "$(cat vesting.addr) 200000000 lovelace" --tx-out-datum-hash-file unit.json --out-file tx.body
+# => Estimated transaction fee: Lovelace 167217
+#    Transaction successfully submitted.
 
-# check that it worked
+# 23:10 : check that it worked
 ${CN}/cardano-cli query utxo --address $(cat vesting.addr) --testnet-magic ${MAGIC}
 
-... TODO
+# grab
+
+cp ${PP3TN}/grab.sh ${PPME3TN}
+cat ${PPME3TN}/grab.sh
+# ${PPME3TN}/grab.sh
+# EDIT
+# - tx-in                : <TxHash>#<TxIx> returned by above 23:10 query
+# - tx-in-collateral     : <TxHash>#<TxIx> returned by below 26:47 query
+# - required-signer-hash : contents of 02.pkh
+# NOTE:
+# - protocol-params-file : points to file created by 23:30
+# 26:47
+${CN}/cardano-cli query utxo --address $(cat 02.addr) --testnet-magic ${MAGIC}
+# 23:30
+${CN}/cardano-cli query protocol-parameters --out-file protocol.json --testnet-magic ${MAGIC}
+
+# try to grab
+./grab.sh
+# => Command failed: transaction build  ... deadline not reached
+
+# need to specify validity interval of the TX
+# 30:05
+${CN}/cardano-cli transaction build --help | grep invalid-before
+${CN}/cardano-cli transaction build --help | grep invalid-hereafter
+
+# remember: plutus uses realtime, cardano uses slots
+
+# find out current slot
+${CN}/cardano-cli query tip --testnet-magic ${MAGIC} | grep slot
+
+# ${PPME3TN}/grab.sh
+# EDIT
+# - invalid-before : slot from above query
+
+./grab.sh
+# => Estimated transaction fee: Lovelace 365441
+#    Transaction successfully submitted.
+
+# 31:22
+# check results
+${CN}/cardano-cli query utxo --address $(cat 02.addr) --testnet-magic ${MAGIC}
 #+end_src
 
 ------------------------------------------------------------------------------
