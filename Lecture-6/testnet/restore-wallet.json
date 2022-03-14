@@ -1,0 +1,4 @@
+{ "name": "HCWallet"
+, "mnemonic_sentence": ["enable", "hedgehog", "scan", "company", "frozen", "drift", "fiction", "farm", "settle", "limit", "critic", "engine", "party", "relief", "rude", "primary", "access", "bridge", "tobacco", "horn", "unit", "mean", "sail", "bus"]
+, "passphrase": "hcsecretpassphrase"
+}

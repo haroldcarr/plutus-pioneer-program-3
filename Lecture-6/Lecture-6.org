@@ -12,7 +12,7 @@ How to interact with Cardano testnet via CLI and PAB
 
 #+begin_src
 export C=~/Cardano
-export CN=${C}/cardano-node-1.33.0
+export CN=${C}/cardano-node-1.34.1
 export PATH=${CN}:${PATH}
 
 export PPME3=${C}/plutus-pioneer-program-me/Lecture-3
@@ -104,9 +104,9 @@ ls -alF ${PP6TN}
 #+begin_src
 cat ${PP6}/query-key1.sh
 #+end_src
-- command : =query utxo=
+- command  : =query utxo=
 - =$MAGIC= : testnet or mainnet
-- address : to lookup UTxOs for
+- address  : to lookup UTxOs for
 
 #+begin_src
 cat ${PP6}/env.sh
@@ -225,6 +225,7 @@ testToken
 Wallet 872cb83b5ee40eb23bfdab1772660c822a48d491:
     {, ""}: 99996869
     {7aa78d513a7ecbffa84ff774c425bdbfa3207e469dde3ebaae7a97b9, "USDT"}: 100000
+:q
 #+end_src
 
 The mint contract is not a typical PAB contract since it
@@ -243,7 +244,210 @@ The mint contract is not a typical PAB contract since it
 
 https://www.youtube.com/watch?v=X6AyZIZ0vaE
 
-=Week06.PAG=
+=Week06.PAB=
+- "wrap" the mint script and the monitor contract
+
+=app/token-pab.hs=
+- application that starts the PAB with above contracts
+
+must first start other applications
+
+assumes cardano-node is running
+
+https://github.com/input-output-hk/plutus-apps/blob/main/plutus-pab/test-node/README.md
+- Instructions for running a public testnet end-to-end integration test
+- the following is doing these steps
+
+** start-testnet-wallet
+
+#+begin_src
+cd ${C}/plutus-apps
+nix-shell
+cd ${PP6}
+./start-testnet-wallet.hs
+#+end_src
+
+** create-wallet
+
+in another shell
+
+#+begin_src
+cd ${C}/plutus-apps
+nix-shell
+cd ${PP6}
+./create-wallet.sh HCWallet hcsecretpassphrase ${PPME6TN}/restore-wallet.json
+cd ${PP6TN}
+ln -s ${PPME6TN}/restore-wallet.json
+cat ${PPME6TN}/restore-wallet.json
+#+end_src
+
+** import / link
+
+8:24 : steps not shown
+- import 'restore-wallet.json' into your Daedalus or Yoroi wallet
+- link up D or Y wallet to wallet created above
+
+** 8:42 : fund wallet
+
+steps not shown
+
+ either
+- send funds from existing wallet to new one, or
+- use the testnet faucet
+
+** 8:58 : load-wallet
+
+inform wallet backend about new wallet
+
+#+begin_src
+cd ${PP6}
+./load-wallet.sh
+# => {"balance":{"total":{"quantity":0,"unit":"lovelace"},
+                 "available":{"quantity":0,"unit":"lovelace"},
+                 "reward":{"quantity":0,"unit":"lovelace"}},
+       "name":"HCWallet",
+       "id":"03f58cc73ff5369672d60dc1562d43999d5d01ba",  <-- use this to talk to PAB
+       "tip":{"height":{"quantity":0,"unit":"block"},
+              "epoch_number":0,"time":"2019-07-24T20:20:16Z",
+              "absolute_slot_number":0,"slot_number":0},
+       "passphrase":{"last_updated_at":"2022-03-13T00:59:43.351567Z"},
+       "address_pool_gap":20,
+       "state":{"status":"syncing","progress":{"quantity":0,"unit":"percent"}},
+       "delegation":{"next":[],"active":{"status":"not_delegating"}},
+       "assets":{"total":[],"available":[]}}
+
+export WALLETID=03f58cc73ff5369672d60dc1562d43999d5d01ba
+#+end_src
+
+** 10:54 start-testnet-chain-index
+
+#+begin_src
+cp ${PP6TN}/chain-index-config.json ${PPME6TN}
+# ${PPME6TN}/chain-index-config.json
+# EDIT:
+# - cicSocketPath : ${PPME3TN/node.sock # resolve ${..}
+# - cicDbPath     : ${C}/chain-index.db # resolve ${..}
+#   - path MUST end with 'chain-index.db'
+
+cd ${C}/plutus-apps
+nix-shell
+cabal build plutus-pab-examples plutus-chain-index
+
+# NOTE: THIS DOES NOT USE ./start-testnet-chain-index.sh AS IN THE VIDEO
+# LARS: syncing this takes time --- maybe even longer than cardano-node
+cabal exec plutus-chain-index -- --config ${PPME6TN}/chain-index-config.json start-index
+#+end_src
+
+** 12:06 migrate-pab / start-testnet-pab
+
+#+begin_src
+# go to shell running cardano-node and get the hash and slot off latest 'new-tip'
+
+# LARS : most of this file copied from plutus-apps
+cp ${PP6TN}/pab-config.yml ${PPME6TN}
+# ${PPME6TN}/pab-config.yml
+# EDIT:
+# - dbConfig.dbConfigFile: ${C}/plutus-pab.db # resolve ${..}
+#
+# - nodeServerConfig.pscSocketPath: ${PPME3TN/node.sock # resolve ${..}
+#
+# - developmentOptions.pabResumeFrom.pointBlockId : <new tip hash>
+# - developmentOptions.pabResumeFrom.pointSlot    : <new tip slot>
+
+cd ${PP6}
+cabal run -- token-pab --config ${PPME6TN}/pab-config.yml migrate
+# => Up to date
+#+end_src
+
+in another nix-shell
+
+#+begin_src
+cd ${C}/plutus-apps
+nix-shell
+cd ${PP6}
+cabal run -- token-pab \
+  --config ${PPME6TN}/pab-config.yml webserver \
+  --passphrase hcsecretpassphrase
+# =>
+Up to date
+[pab:Info:11] [2022-03-13 20:31:33.62 UTC] Restoring PAB state ...
+[pab:Info:11] [2022-03-13 20:31:33.62 UTC] No contract instance were restored in the PAB state.
+[pab:Info:11] [2022-03-13 20:31:33.62 UTC] Starting PAB backend server on port 9080
+
+http://localhost:9080/swagger/swagger-ui/
+
+#+begin_src
+curl -X 'GET' \
+  'http://localhost:9080/api/contract/definitions' \
+  -H 'accept: application/json;charset=utf-8' | jq '.'
+# -> [{"csrSchemas":[], ...
+
+curl -X 'GET' \
+  'http://localhost:9080/api/contract/instances' \
+  -H 'accept: application/json;charset=utf-8' | jq '.'
+# => []
+#+end_src
+
+** 18:53 activate mint-token-curl
+
+#+begin_src
+cd ${PP6}
+
+# addresswhere minted token and change goes to
+# get via
+# 1. import wallet into Daedalus or Yoroi then press "receive"
+# 2. via wallet backend : what follows:
+
+# pick an "unused" address from list returned via:
+curl -H "content-type: application/json" \
+     -XGET localhost:8090/v2/wallets/$WALLETID/addresses | jq '.'
+
+#export ADDRESS=addr_test1qzrgxjw0ntrvv536sl8nadhna49p5h23gjw6pkx9a3lznh5f3wmajsfhk7240ent8g89f99ef975jy7ev3uya88055xsa9t2ed
+export ADDRESS=addr_test1qqua7jrpgpkdgxpgp3zrdrh8umm7svtqqp2q0l8lv2zelmvf3wmajsfhk7240ent8g89f99ef975jy7ev3uya88055xsngu84c
+
+./mint-token-curl.sh 123456 PPP
+# =>
+minting 123456 coins of token PPP
+payment key hash: 868349cf9ac6c6523a87cf3eb6f3ed4a1a5d51449da0d8c5ec7e29de
+stake key hash: 898bb7d94137b79557e66b3a0e5494b9497d4913d964784e9cefa50d
+{"unContractInstanceId":"439eb8d8-9a3e-4c66-9685-e4bc021982ae"}
+
+# at this point: token minted via PAB (like done with CLI)
+
+# this now returns a non-empty array
+curl -X 'GET' \
+  'http://localhost:9080/api/contract/instances' \
+  -H 'accept: application/json;charset=utf-8' | jq '.'
+#+end_src
+
+- CLI
+  - PRO
+    - only needs cardano-node
+  - CON
+    - but text-only
+    - manual lookup of UTxO to use as input
+
+- PAB
+  - PRO
+    - UTxO input taken care of automatically
+  - CON
+    - needs cardano-node, wallet backend, chain index
+
+** 25:11 mint via Haskell/Req (instead of curl)
+
+=app/mint-token.hs=
+
+#+begin_src
+cd ${PP6}
+cabal run mint-token -- 654321 JUNK ${WALLETID} ${ADDRESS}
+# =>
+Up to date
+minting token for wallet id 03f58cc73ff5369672d60dc1562d43999d5d01ba with parameters TokenParams {tpToken = "JUNK", tpAmount = 654321, tpAddress = Address {addressCredential = PubKeyCredential 868349cf9ac6c6523a87cf3eb6f3ed4a1a5d51449da0d8c5ec7e29de, addressStakingCredential = Just (StakingHash (PubKeyCredential 898bb7d94137b79557e66b3a0e5494b9497d4913d964784e9cefa50d))}}
+minted tokens, contract instance id: ContractInstanceId {unContractInstanceId = ed604d15-cfaf-4455-9c3b-54ea343707c6}
+#+end_src
+
+** 29:38 monitor
+
 
 ------------------------------------------------------------------------------
 * Part 7 - Summary
