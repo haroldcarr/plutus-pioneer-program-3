@@ -27,5 +27,9 @@ Contents
   - how to mint native tokens and NFTs (test with EmulatorTrace)
 - [[./Lecture-6/Lecture-6.org][lecture 6]]
   - interact with Cardano testnet via CLI and PAB
-- 7 tbd
+- - [[./Lecture-6/Lecture-7.org][lecture 7]]
+  - Write a game where the game state
+    - is implicit in the contract control flow
+    - is explicit using Plutus StateMachine
 - 8 tbd
+- 9 tbd

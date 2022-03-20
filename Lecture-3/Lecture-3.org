@@ -355,7 +355,7 @@ ${CN}/cardano-cli address build \
 # need test ADA via
 # https://testnets.cardano.org/en/testnets/cardano/tools/faucet/
 # cut/paste 01.addr contents into form; request funds
-# ditt      02.addr
+# ditto     02.addr
 # to see if it worked:
 ${CN}/cardano-cli query --help
 ${CN}/cardano-cli query utxo --help

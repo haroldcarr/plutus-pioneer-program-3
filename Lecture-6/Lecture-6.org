@@ -244,11 +244,13 @@ The mint contract is not a typical PAB contract since it
 
 https://www.youtube.com/watch?v=X6AyZIZ0vaE
 
-=Week06.PAB=
-- "wrap" the mint script and the monitor contract
+#+begin_src
+# "wrap" the mint script and the monitor contract
+cat ${PP6SRC}/PAB.hs
 
-=app/token-pab.hs=
-- application that starts the PAB with above contracts
+# application that starts the PAB with above contracts
+cat ${PP6}/app/token-pab.hs
+#+end_src
 
 must first start other applications
 
@@ -301,6 +303,7 @@ inform wallet backend about new wallet
 
 #+begin_src
 cd ${PP6}
+cat ./load-wallet.sh
 ./load-wallet.sh
 # => {"balance":{"total":{"quantity":0,"unit":"lovelace"},
                  "available":{"quantity":0,"unit":"lovelace"},
@@ -317,6 +320,8 @@ cd ${PP6}
        "assets":{"total":[],"available":[]}}
 
 export WALLETID=03f58cc73ff5369672d60dc1562d43999d5d01ba
+
+cardano-wallet wallet list
 #+end_src
 
 ** 10:54 start-testnet-chain-index
@@ -338,7 +343,7 @@ cabal build plutus-pab-examples plutus-chain-index
 cabal exec plutus-chain-index -- --config ${PPME6TN}/chain-index-config.json start-index
 #+end_src
 
-** 12:06 migrate-pab / start-testnet-pab
+** 12:06 migrate-pab
 
 #+begin_src
 # go to shell running cardano-node and get the hash and slot off latest 'new-tip'
@@ -358,6 +363,8 @@ cd ${PP6}
 cabal run -- token-pab --config ${PPME6TN}/pab-config.yml migrate
 # => Up to date
 #+end_src
+
+** start-testnet-pab
 
 in another nix-shell
 
@@ -402,8 +409,7 @@ cd ${PP6}
 curl -H "content-type: application/json" \
      -XGET localhost:8090/v2/wallets/$WALLETID/addresses | jq '.'
 
-#export ADDRESS=addr_test1qzrgxjw0ntrvv536sl8nadhna49p5h23gjw6pkx9a3lznh5f3wmajsfhk7240ent8g89f99ef975jy7ev3uya88055xsa9t2ed
-export ADDRESS=addr_test1qqua7jrpgpkdgxpgp3zrdrh8umm7svtqqp2q0l8lv2zelmvf3wmajsfhk7240ent8g89f99ef975jy7ev3uya88055xsngu84c
+export ADDRESS=addr_test1qzrgxjw0ntrvv536sl8nadhna49p5h23gjw6pkx9a3lznh5f3wmajsfhk7240ent8g89f99ef975jy7ev3uya88055xsa9t2ed
 
 ./mint-token-curl.sh 123456 PPP
 # =>
@@ -414,7 +420,7 @@ stake key hash: 898bb7d94137b79557e66b3a0e5494b9497d4913d964784e9cefa50d
 
 # at this point: token minted via PAB (like done with CLI)
 
-# this now returns a non-empty array
+# this now returns a NON-empty array
 curl -X 'GET' \
   'http://localhost:9080/api/contract/instances' \
   -H 'accept: application/json;charset=utf-8' | jq '.'
@@ -433,12 +439,16 @@ curl -X 'GET' \
   - CON
     - needs cardano-node, wallet backend, chain index
 
-** 25:11 mint via Haskell/Req (instead of curl)
+** 25:11 mint via Haskell
 
-=app/mint-token.hs=
+uses Req (instead of curl)
+
 
 #+begin_src
+cat ${PP6}/app/mint-token.hs
+
 cd ${PP6}
+
 cabal run mint-token -- 654321 JUNK ${WALLETID} ${ADDRESS}
 # =>
 Up to date
@@ -446,8 +456,73 @@ minting token for wallet id 03f58cc73ff5369672d60dc1562d43999d5d01ba with parame
 minted tokens, contract instance id: ContractInstanceId {unContractInstanceId = ed604d15-cfaf-4455-9c3b-54ea343707c6}
 #+end_src
 
+The shell running the PAB will show something like
+
+#+begin_example
+[pab:Info:128] [2022-03-15 17:52:43.60 UTC]
+Initialising contract Mint
+(TokenParams { tpToken = "JUNK", tpAmount = 654321
+             , tpAddress = Address { addressCredential = PubKeyCredential 868349cf9ac6c6523a87cf3eb6f3ed4a1a5d51449da0d8c5ec7e29de
+                                   , addressStakingCredential = Just (StakingHash (PubKeyCredential 898bb7d94137b79557e66b3a0e5494b9497d4913d964784e9cefa50d))}})
+with ID 7ac95541-817f-435c-a3f1-9695900c725f
+
+[pab:Info:128] [2022-03-15 17:52:43.60 UTC]
+Activated instance 7ac95541-817f-435c-a3f1-9695900c725f on W03f58cc
+
+[pab:Info:130] [2022-03-15 17:52:43.97 UTC]
+7ac95541-817f-435c-a3f1-9695900c725f:
+"minted Value
+ (Map [(95fe13d5e382c3b64afb0b7668a3bf7f021abf7de6b63da21c30a363,Map [(\"JUNK\",654321)])])"
+#+end_example
+
 ** 29:38 monitor
 
+To avoid having so many log messages from above work, clear and restart PAB.
+
+#+begin_src
+# stop the PAB
+# NOT SHOWN IN LECTURE
+# go to shell where PAB is running and hit C-c
+
+# clear the database
+rm ${C}/plutus-pab.db
+
+# migrate again to set up an empty database
+cd ${PP6}
+cabal run -- token-pab --config ${PPME6TN}/pab-config.yml migrate
+
+# restart the PAB
+cabal run -- token-pab \
+  --config ${PPME6TN}/pab-config.yml webserver \
+  --passphrase hcsecretpassphrase
+#+end_src
+
+Monitor via Haskell version because easier to extract status.
+
+#+begin_src
+cd ${PP6}
+cat ${PP6}/app/monitor.hs
+
+# in a separate shell
+cabal exec monitor -- ${WALLETID} ${ADDRESS}
+# =>
+monitoring address Address {addressCredential = PubKeyCredential 868...} on wallet 03f58cc73ff5369672d60dc1562d43999d5d01ba
+started monitor-process with contract id e52d025f-8213-40db-8fef-efdabae48932
+
+[(95fe13d5e382c3b64afb0b7668a3bf7f021abf7de6b63da21c30a363,"JUNK",654321),(,"",2000000)]
+
+# in a new shell
+curl -X 'GET' \
+  'http://localhost:9080/api/contract/instances' \
+  -H 'accept: application/json;charset=utf-8' | jq '.' | grep observableState
+#+end_src
 
 ------------------------------------------------------------------------------
 * Part 7 - Summary
+
+https://www.youtube.com/watch?v=KmNOFltlRiA
+
+mint
+- via CLI
+- via PAB
+  - in hosted scenario : PAB needs control over waller

@@ -1,0 +1,248 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-8
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+environment
+
+#+begin_src
+export C=~/Cardano
+
+export PP8=${C}/plutus-pioneer-program/code/week08
+export PPME8=${C}/plutus-pioneer-program-me/Lecture-8
+
+export PP8SRC=${PP8}/src/Week08
+export PP8TST=${PP8}/test/Spec
+#+end_src
+
+build
+
+#+begin_src
+cd ${PP8}
+git checkout main
+git pull
+tag=`cat ${PP8}/cabal.project | grep -A 1 "input-output-hk/plutus-apps.git" | grep tag | cut -d':' -f2`
+echo ${tag}
+cd ${C}/plutus-apps
+git checkout ${tag}
+nix-shell
+cd ${PP8}
+cabal build
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 1 - Introduction
+
+https://www.youtube.com/watch?v=mqHifIPefus
+
+last lecture showed StateMachine
+- lots of sharing between on/off chain code
+
+this lecture will show another example StateMachine and testing
+
+------------------------------------------------------------------------------
+* Part 2 - Another State Machine Example: Token Sale
+
+https://www.youtube.com/watch?v=y5O58-NpnJ4
+
+[[./TokenSale.png]]
+
+- seller entity
+  - starts with an NFT - state token for identity (like lecture 7)
+  - lock NFT at script address
+  - datum is int that indicates the price of the token
+    - starts at 0
+  - operations
+    - TX to SetPrice
+      - input  : current UTxO
+      - output :  "updated" UTxO
+    - TX to AddTokens (anybody can add, not just sellar)
+      - input
+        - current UTxO
+        - some tokens
+      - output : updated UTxO with tokens added
+    - TX to Withdraw N tokens and M Ada
+      - input : current UTxO
+      - output
+        - updated UTxO with less Ada
+        - new UTxO to sellar M Ada and N tokens
+- buyer entities
+  - operations
+    - TX to BuyTokens (anybody can buy, even sellar)
+      - input
+        - current UTxO
+        - M Ada for N tokens
+      - output
+        - updated UTxO with N less tokens and M more Ada
+        - new UTxO to buyer with N tokens
+
+#+begin_src
+# contract and tests
+tree ${PP8SRC}/..
+
+# the trace in the test is from Spec.Trace
+cat ${PP8}/plutus-pioneer-program-week08.cabal | grep -A 7 "test-suite plutus-pioneer-program-week08-tests"
+
+cd ${PP8}
+# different repl start to be able to find Spec.Trace
+cabal repl plutus-pioneer-program-week08:test:plutus-pioneer-program-week08-tests
+:l test/Spec/Trace.hs
+runMyTrace
+# =>
+Final balances
+Wallet 2:
+    {aa, "A"}: 1020
+    {, ""}: 979989369
+Wallet 1:
+    {aa, "A"}: 940
+    {, ""}: 1007964925
+Wallet 3:
+    {aa, "A"}: 1005
+    {, ""}: 994989369
+Script 01f955f1508c759383999f3c6caa07679fb69e4b7674d6f3e92c0c9b:
+    {aa, "A"}: 35
+    {, ""}: 17000000
+    {877bfcf121442dfe933ce7656d3143d68d7617aa97b0da1da6574923, 0x01f955f1508c759383999f3c6caa07679fb69e4b7674d6f3e92c0c9b}: 1
+
+:q
+#+end_src
+
+- Wallet 2 : purchased 20 tokens
+- Wallet 1 : put 100 into the token sale, then witdrew 40; withdrew 10 Ada
+- Wallet 3 : purchased  5 tokens
+- Script   : 35 tokens left; 15 ada left (plus minimal deposit from beginning)
+
+------------------------------------------------------------------------------
+* Part 3 - Automatic Testing using Emulator Traces
+
+https://www.youtube.com/watch?v=LG9O8YbBXyM
+
+Plutus uses [[https://hackage.haskell.org/package/tasty-1.4.2.1/docs/Test-Tasty.html][Tasty]].
+
+[[https://marlowe-playground-staging.plutus.aws.iohkdev.io/doc/haddock/plutus-contract/html/Plutus-Contract-Test.html][Plutus.Contract.Test]]
+- one that works with EmulatorTrace
+- one that works with property-based testing
+
+This Part 3 looks at EmulatorTrace support.
+
+=Plutus.Contract.Test=
+- =checkPredicate*=
+  - =TracePredicate=
+    - =walletFundsChange=
+- =data CheckOptions=  =changeInitialWalletValue=
+
+#+begin_src
+cat ${PP8TST}/Trace.hs | grep -A 5 "tests :: TestTree"
+
+cd ${PP8}
+cabal repl test:plutus-pioneer-program-week08-tests
+:l test/Spec/Trace.hs
+import Test.Tasty
+defaultMain tests
+# =>
+token sale trace: OK (0.23s)
+
+All 1 tests passed (0.23s)
+*** Exception: ExitSuccess
+
+# change what is expected so it will fail and run again
+# ...
+
+:q
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 4 - Test Coverage
+
+https://www.youtube.com/watch?v=wJQnQtLxi2E
+
+=checkPredicateCoverage=
+
+#+begin_src
+# setup
+cat ${PP8TST}/Trace.hs | grep -A 10 "checkPredicateOptionsCoverage :: CheckOptions"
+
+# use with Plutus.Contract.Test.Coverage.ReportCoverage
+cat ${PP8TST}/Trace.hs | grep -A 15 "testCoverage :: IO"
+
+cd ${PP8}
+cabal repl test:plutus-pioneer-program-week08-tests
+:l test/Spec/Trace.hs
+testCoverage
+# =>
+token sale trace: OK (0.25s)
+
+All 1 tests passed (0.25s)
+Tasty exited with: ExitSuccess
+
+:q
+
+# colors indicate coverage
+cat ${PP8}/TokenSaleTrace.html
+#+end_src
+
+colors
+- green : in all test it was true
+- black : never hit
+
+#+begin_comment
+file:///Users/hcarr/Cardano/plutus-pioneer-program/code/week08/TokenSaleTrace.html
+#+end_comment
+
+------------------------------------------------------------------------------
+* Part 5 - Interlude: Optics
+
+https://www.youtube.com/watch?v=naLA0OMIF1Q
+
+------------------------------------------------------------------------------
+* Part 6 - Property-Based Testing with QuickCheck
+
+https://www.youtube.com/watch?v=9mrYT9UXLO8
+
+[[https://hackage.haskell.org/package/QuickCheck][QuickCheck]]
+
+------------------------------------------------------------------------------
+* Part 7 - Property-Based Testing of Plutus Contracts
+
+https://www.youtube.com/watch?v=49oAwySp6Ys
+
+1:07:57
+
+#+begin_src
+cd ${PP8}
+cabal repl test:plutus-pioneer-program-week08-tests
+:l test/Spec/Model.hs
+test
+# =>
++++ OK, passed 100 tests.
+
+Actions (2394 in total):
+20.68% BuyTokens
+20.51% Withdraw
+...
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 8 - Homework
+
+TODO
+
+https://www.youtube.com/watch?v=J0rD_hmsMVo
+
+Modify =TokenSale= =TSRedeemer= to accept an additional =Close= TX
+- called only by seller
+- close the UTxO
+- collect all remaining
+  - tokens
+  - lovelace
+  - NFT
+
+Need to modify Datum type : State (Just Integer)
+
+Modify Trace and Model for new TX.
+

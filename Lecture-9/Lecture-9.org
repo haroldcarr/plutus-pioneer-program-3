@@ -1,0 +1,202 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-9
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+#+begin_src
+export C=~/Cardano
+
+export PP9=${C}/plutus-pioneer-program/code/week09
+export PPME9=${C}/plutus-pioneer-program-me/Lecture-9
+
+export PP9SRC=${PP9}/src/Week09
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 1 - Introduction
+
+https://www.youtube.com/watch?v=433VbouC-30
+
+Marlowe : DSL for financial contracts (built on top of Plutus).
+
+Marlowe has changed since this lecture was recorded for cohort 1.
+
+guest lecturers
+- Simon Thompson : https://www.kent.ac.uk/computing/people/3164/thompson-simon
+- Alex Nemesh    : https://iohk.io/en/research/library/authors/alexander-nemish/
+
+It is possible to deploy Marlowe contracts on mainnet or testnet.
+
+Tool: Marlowe CLI (similar to cardano CLI).
+- Brian Bush (https://iohk.io/en/team/brian-bush) will demonstrate.
+
+------------------------------------------------------------------------------
+* Part 2 - Simon Thompson: Marlowe Overview
+
+https://www.youtube.com/watch?v=ce_Yv8BlW7c
+
+Designed for users /and/ developers
+- for maximum assurance.
+  - contracts do what they should, and not what they shouldn't
+- language is as simple as possible
+- contracts can be /read/ and /simulated/
+- can explore /all behavior/ before running
+- can be /proved safe/
+
+Roles that can be /owned/ are represented by native tokens.
+- roles are tradable
+
+ingredients
+- roles
+- payments
+- external choices
+- external info (e.g., stock market price) via "oracles"
+
+contracts
+- are finite : no recursion, no loops
+- will terminate : timeouts on actions: choice, deposit ...
+  - with a defined lifetime (from timeouts)
+- no assets retained on close : (local) accounts refunded on close
+- conservation of value : from underlying blockchain
+
+#+begin_example
+-- 'Contract's are continuations
+data Contract
+  = Close
+  | Pay    Party                  Payee    Value    Contract
+  | If     Observation            Contract Contract
+  | When   [Case Action Contract] Timeout  Contract
+  | Let    ValueId                Value    Contract
+  | Assert Observation            Contract
+#+end_example
+
+Marlowe Suite
+- marlowe-finance.io
+- Run
+  - end users : obtain and run contracts (Marlowe dap)
+- Market
+  - contracts up/down loaded with assurances
+- Play
+  - interactive simulation
+- Build
+  - contracts built in code, visually and embedded
+
+note: Play/Build combined in Marlowe Playground
+
+15:55 : demo of Marlowe Run
+
+20:00 : engineering
+
+#+begin_example
+
+            +------------------------+
+            |        Haskell         |
+            |     +-------------+    |
+            |     |             |    |
+real world  |     |   Marlowe +--------------+
+overlaps    |   +-------------| Run + wallet |
+H,M,P       |   |     Plutus  +--------------+
+            |   |                 |  |
+            +-- +-----------------+--+
+                |  Cardano node   |
+                +-----------------+
+#+end_example
+
+25:13 : system design
+
+Semantics = executable specification in Haskell
+- in Isabelle   : for reasoning/proof
+- in Plutus     : for impl on blockchain
+- in Purescript : for browser-based simulation
+
+30:12 : usable
+
+34:49 : assurance
+
+42:07 : more info
+
+------------------------------------------------------------------------------
+* Part 3 - Alexander Nemish: Marlowe in Plutus
+
+https://www.youtube.com/watch?v=hd-E5DCN8uc
+
+https://github.com/input-output-hk/marlowe/blob/master/src/Language/Marlowe/SemanticsTypes.hs
+- =Data Contract=
+  - model of Marlowe contract
+- =Data State=
+  - stored on blockchain
+- =Data Input=
+  - actions
+- =Data TransactionInput=
+- =Data TransactionOutput=
+- =Data MarloweData=
+  - stored on blockchain
+
+[[https://github.com/input-output-hk/marlowe/blob/master/src/Language/Marlowe/Semantics.hs]]
+- =computeTransaction=
+  - entrance to semantics
+- =applyAllInputs=
+- =reduceContractUntilQuiescent=
+- =reduceContractStep=
+
+Marlowe validator uses =StateMachine=
+
+------------------------------------------------------------------------------
+* Part 4 - Brian Bush: The Marlowe CLI
+
+https://www.youtube.com/watch?v=Vx_ygegrY78
+
+submit TXs and interact with Marlowe contracts via CLI
+
+https://github.com/input-output-hk/marlowe-cardano/blob/main/marlowe-cli/ReadMe.md
+
+2:34
+- high level focuses on Marlowe contract (hides lower Plutus and cardano node level)
+- PAB : interact with PAB contracts/endpoints (hides UTxO mgmt)
+- low level : debug, ...
+
+4:16 : installation
+
+5:11 : =marlowe-cli --help=
+
+5:35 : high-level workflow
+
+8:00 : templates for marlowe contracts
+
+8:17 : high-level commands for running contracts
+
+8:59 : low-level capabilities
+
+9:51 : monolithic low-level workflow
+
+10:56 : granular low-level workflow
+
+11:22 : marlowe on plutus in cardano (script, datum, redeemer)
+
+13:39 : roles : currency, tokens, payout scripts
+
+14:54 : escrow example using high-level workflow
+
+19:13 : detailed example
+- this is what to look at as a guide to using the CLI
+
+35:00 : diagram : summary of TXs
+
+------------------------------------------------------------------------------
+* Part 5 - Marlowe Playground Demo
+
+https://www.youtube.com/watch?v=l0LXjh8J-go
+
+https://marlowe-playground-staging.plutus.aws.iohkdev.io/#/haskell
+
+TODO
+
+------------------------------------------------------------------------------
+* Part 6 - Homework
+
+TODO

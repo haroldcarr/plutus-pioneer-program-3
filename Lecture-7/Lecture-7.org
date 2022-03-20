@@ -1,0 +1,196 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-7
+
+Write a game where the game state
+- is implicit in the contract control flow
+- is explicit using Plutus StateMachine
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+#+begin_src
+export C=~/Cardano
+
+export PP7=${C}/plutus-pioneer-program/code/week07
+export PPME7=${C}/plutus-pioneer-program-me/Lecture-7
+
+export PP7SRC=${PP7}/src/Week07
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 1 - Introduction
+
+https://www.youtube.com/watch?v=CLOHdIGgy90
+
+support for state machines in plutus libraries
+
+but requires "more" resources to run
+
+plutus team working on performance
+
+make writing off/on chain code that stay in sync easier
+
+------------------------------------------------------------------------------
+* Part 2 - Commit Schemes
+
+https://www.youtube.com/watch?v=JXKf1JwVAOE
+
+example: game between Alice and Bob (like rock, paper, scissors)
+- if both choose 0 or 1, then alice wins
+- if choices are different, then bob wins
+
+alice commits to choice, but does not reveal to bob
+
+#+begin_example
+alice  --->   hash (nonce ++ choice) ---> bob
+
+       <----------------------------- choice
+
+       --->   nonce, choice  ----------->
+#+end_example
+
+state machine
+
+#+begin_example
+             +------------+                  +-----------------+
+   alice --> | hash(N++C) |  -- bob play --> | hash(N++C) , Cb | ---> deadline past ------+
+             +------------+                  +-----------------+                          |
+                   |                                  |                                   |
+                   |                                  | alice reveal N , C                |
+                   |                                  |                                   |
+                   |                                  v                                   |
+                   | bob does not play            +=======+           bob claims          |
+                   +----------------------------> || won || <-----------------------------+
+                     alice gets her money back    +=======+
+#+end_example
+
+------------------------------------------------------------------------------
+* Part 3 - Implementation without State Machines
+
+https://www.youtube.com/watch?v=yczHkTzDnpk
+
+see annotated [[./EvenOdd.hs][EvenOdd.hs]]
+
+#+begin_src
+# test with EmulatorTrace
+cat ${PP7SRC}/TestEvenOdd.hs
+#+end_src
+
+1st player starts with 1000 ADA and an NFT.
+- This does NOT correspond to a real minting script.
+
+2nd player starts with 1000 ADA.
+
+#+begin_src
+# assumes correct tag checked out
+cd ${C}/plutus-apps
+nix-shell
+cd ${PP7}
+cabal clean
+cabal update
+cabal build
+cabal repl
+
+import Week07.TestEvenOdd
+
+# 1st player should win
+test' Zero Zero
+# =>
+Final balances
+Wallet 7ce812d7a4770bbf58004067665c3a48f28ddd58:
+    {, ""}: 899992070
+Wallet 872cb83b5ee40eb23bfdab1772660c822a48d491:
+    {ff, "STATE TOKEN"}: 1
+    {, ""}: 1099992060
+
+# 2nd player should win
+test' Zero One
+# =>
+Final balances
+Wallet 7ce812d7a4770bbf58004067665c3a48f28ddd58:
+    {, ""}: 1097984140
+Wallet 872cb83b5ee40eb23bfdab1772660c822a48d491:
+    {, ""}: 901999990
+    {ff, "STATE TOKEN"}: 1
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 4 - State Machines
+
+https://www.youtube.com/watch?v=7jiaQRA-wKI
+
+https://playground.plutus.iohkdev.io/doc/haddock/plutus-contract/html/Plutus-Contract-StateMachine.html
+
+=data StateMachine s i=
+- =s= : state : datum
+- =i= : input : redeemer
+- constructors
+  - ...
+  - =smThreadToken :: Maybe ThreadToken= : "state" token (like in Part 3)
+
+=data State s=
+- =stateData  :: s=     : datum
+- =stateValue :: Value= : ??
+
+see annotated [[./StateMachine.hs][StateMachine.hs]]
+
+#+begin_src
+# EmulatorTrace test
+cat ${PP7SRC}/TestStateMachine.hs
+
+# 38:55 : slotToEndPOXISTime (because Plutus in real time, Cardano in slot time)
+
+cd ${PP7}
+cabal repl
+
+import Week07.TestStateMachine
+
+Week07.TestStateMachine.test' Week07.TestStateMachine.Zero Week07.TestStateMachine.Zero
+# =>
+Wallet 7ce812d7a4770bbf58004067665c3a48f28ddd58:
+    {, ""}: 94990082
+Wallet 872cb83b5ee40eb23bfdab1772660c822a48d491:
+    {, ""}: 104983728
+
+Week07.TestStateMachine.test' Week07.TestStateMachine.Zero Week07.TestStateMachine.One
+# =>
+Wallet 7ce812d7a4770bbf58004067665c3a48f28ddd58:
+    {, ""}: 104976992
+Wallet 872cb83b5ee40eb23bfdab1772660c822a48d491:
+    {, ""}: 94996818
+
+:q
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 5 - Homework
+
+TODO
+
+https://www.youtube.com/watch?v=J0rD_hmsMVo
+
+Implement
+
+#+begin_src
+cat ${PP7SRC}/RockPaperScissors.hs
+#+end_src
+
+using [[./StateMachine.hs][StateMachine.hs]] as a guide/template.
+
+Now a possibility of a draw.
+In that case, each player should get their own stake back.
+
+=GameRedeemer.Reveal= now includes =GameChoice= because might be a draw.
+
+A new transition case for "draw".
+
+
+
+
+
+
+
