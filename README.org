@@ -8,28 +8,32 @@ Contents
 
 - [[./0-README-setup.org][how to setup an plutus/cardano environment]]
 
-- [[./Lecture-1/Lecture-1.org][lecture 1]]
+- [[./Lecture-01/Lecture-01.org][lecture 01]]
   - Extended Unspent Transaction Output (EUTxO) model
   - building example code with repos : =plutus=, =plutus-apps=, =plutus-pioneer-program=
   - auction contract
   - playground
-- [[./Lecture-2/Lecture-2.org][lecture 2]]
+- [[./Lecture-02/Lecture-02.org][lecture 02]]
   - =BuiltInData= : low-level (but faster) untyped data
   - higher-level typed data (that gets converted from/to =BuiltInData=)
-- [[./Lecture-3/Lecture-3.org][lecture 3]]
+- [[./Lecture-03/Lecture-03.org][lecture 03]]
   - script context
   - handling time
   - parameterized contracts
   - deploying to Cardano testnet via CLI
-- [[./Lecture-4/Lecture-4.org][lecture 4]]
+- [[./Lecture-04/Lecture-04.org][lecture 04]]
   - EmulatorTrace monad (enables programmatic testing, rather than using playground)
-- [[./Lecture-5/Lecture-5.org][lecture 5]]
+- [[./Lecture-05/Lecture-05.org][lecture 05]]
   - how to mint native tokens and NFTs (test with EmulatorTrace)
-- [[./Lecture-6/Lecture-6.org][lecture 6]]
+- [[./Lecture-06/Lecture-06.org][lecture 06]]
   - interact with Cardano testnet via CLI and PAB
-- - [[./Lecture-6/Lecture-7.org][lecture 7]]
+- [[./Lecture-07/Lecture-07.org][lecture 07]]
   - Write a game where the game state
     - is implicit in the contract control flow
     - is explicit using Plutus StateMachine
-- 8 tbd
-- 9 tbd
+- [[./Lecture-08/Lecture-08.org][lecture 08]]
+  - another example StateMachine and testing
+- [[./Lecture-09/Lecture-09.org][lecture 09]]
+  - Marlowe : DSL for financial contracts
+- [[./Lecture-10/Lecture-10.org][lecture 10]]
+  - TODO

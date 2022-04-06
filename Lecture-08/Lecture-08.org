@@ -14,7 +14,7 @@ environment
 export C=~/Cardano
 
 export PP8=${C}/plutus-pioneer-program/code/week08
-export PPME8=${C}/plutus-pioneer-program-me/Lecture-8
+export PPME8=${C}/plutus-pioneer-program-me/Lecture-08
 
 export PP8SRC=${PP8}/src/Week08
 export PP8TST=${PP8}/test/Spec

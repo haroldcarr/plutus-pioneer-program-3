@@ -1,0 +1,18 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-10
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+#+begin_src
+export C=~/Cardano
+
+export PP10=${C}/plutus-pioneer-program/code/week10
+export PPME10=${C}/plutus-pioneer-program-me/Lecture-10
+
+export PP10SRC=${PP10}/src/Week10
+#+end_src

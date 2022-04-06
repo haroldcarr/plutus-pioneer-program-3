@@ -15,14 +15,14 @@ export C=~/Cardano
 export CN=${C}/cardano-node-1.34.1
 export PATH=${CN}:${PATH}
 
-export PPME3=${C}/plutus-pioneer-program-me/Lecture-3
+export PPME3=${C}/plutus-pioneer-program-me/Lecture-03
 export PPME3TN=${PPME3}/testnet
 export CARDANO_NODE_SOCKET_PATH=${PPME3TN}/node.socket
 
 export PP6=${C}/plutus-pioneer-program/code/week06
-export PPME6=${C}/plutus-pioneer-program-me/Lecture-6
+export PPME6=${C}/plutus-pioneer-program-me/Lecture-06
 export PP6TN=${C}/plutus-pioneer-program/code/week06/testnet
-export PPME6TN=${C}/plutus-pioneer-program-me/Lecture-6/testnet
+export PPME6TN=${C}/plutus-pioneer-program-me/Lecture-06/testnet
 mkdir  ${PPME6TN}
 export PP6SRC=${PP6}/src/Week06
 
@@ -34,13 +34,13 @@ export MAGIC='--testnet-magic 1097911063'
 
 https://www.youtube.com/watch?v=TfWKxdli4eI
 
-Lecture-3 showed how to interact with testnet via CLI.
+Lecture-03 showed how to interact with testnet via CLI.
 
 This lecture will interact with testnet again via
 - CLI
 - Plutus Application Backend (PAB)
 
-Example : minting native tokens (like in Lecture-5).
+Example : minting native tokens (like in Lecture-05).
 
 ------------------------------------------------------------------------------
 * Part 2 - The Minting Policy
@@ -51,7 +51,7 @@ https://www.youtube.com/watch?v=w7_27sQIqkY
 tree ${PP6SRC}
 cat  ${PP6SRC}/Token/OnChain.hs
 #+end_src
-- similar to Lecture-5 NFT example
+- similar to Lecture-05 NFT example
 - except takes number of coins to mint
 
 ------------------------------------------------------------------------------

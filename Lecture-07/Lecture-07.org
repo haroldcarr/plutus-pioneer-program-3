@@ -16,7 +16,7 @@ Write a game where the game state
 export C=~/Cardano
 
 export PP7=${C}/plutus-pioneer-program/code/week07
-export PPME7=${C}/plutus-pioneer-program-me/Lecture-7
+export PPME7=${C}/plutus-pioneer-program-me/Lecture-07
 
 export PP7SRC=${PP7}/src/Week07
 #+end_src

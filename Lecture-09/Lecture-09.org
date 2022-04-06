@@ -12,7 +12,7 @@ Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-9
 export C=~/Cardano
 
 export PP9=${C}/plutus-pioneer-program/code/week09
-export PPME9=${C}/plutus-pioneer-program-me/Lecture-9
+export PPME9=${C}/plutus-pioneer-program-me/Lecture-09
 
 export PP9SRC=${PP9}/src/Week09
 #+end_src
