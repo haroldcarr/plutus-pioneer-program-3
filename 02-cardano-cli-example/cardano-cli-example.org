@@ -22,10 +22,6 @@ export CCE=${PPME}/02-cardano-cli-example
 2 wallets for parameterized contract example.
 
 #+begin_src
-cardano-cli                 --help
-cardano-cli address         --help
-cardano-cli address key-gen --help
-
 export DATE=`date "+%Y-%m-%d-%H-%M-%S"`
 echo ${DATE}
 
@@ -38,8 +34,6 @@ cardano-cli address key-gen \
   --signing-key-file      ${CCE}/02-${DATE}.skey
 
 # payment addresses for above key pairs
-
-cardano-cli address build   --help
 
 cardano-cli address build \
   --payment-verification-key-file ${CCE}/01-${DATE}.vkey \
@@ -106,6 +100,7 @@ ${CCE}/send --change-addr $(cat ${CCE}/01-${DATE}.addr) \
 
 cat /tmp/send-tx-${DATE}.body
 cat /tmp/send-tx-${DATE}.signed
+
 # see if it worked : 01 should have less; 02 should now have some
 # my have to wait for results
 cardano-cli query utxo --address $(cat ${CCE}/01-${DATE}.addr) --testnet-magic ${CNTN_MAGIC}
