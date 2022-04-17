@@ -1,0 +1,127 @@
+#!/bin/bash
+
+VERBOSE=false
+
+usage () {
+    echo ""
+    echo "send [OPTIONS]"
+    echo "  Send lovelace from given UTxO to given address."
+    echo ""
+    echo "  Options:"
+    echo ""
+    echo "    --change-addr"
+    echo "      where to send any change"
+    echo ""
+    echo "    --skey"
+    echo "      signing key of owner of UTxO"
+    echo ""
+    echo "    --in"
+    echo "      UTxO and slot number of input"
+    echo ""
+    echo "    --to-addr"
+    echo "      where to send lovelace"
+    echo ""
+    echo "    --amount"
+    echo "      amount to send"
+    echo ""
+    echo "    --dir"
+    echo "      location to write tmp files"
+    echo ""
+    echo "    --filename"
+    echo "      name of tmp files"
+    echo ""
+    echo "    --help"
+    echo "      usage"
+    echo ""
+    echo "    --verbose"
+    echo "      more info"
+}
+
+while [[ $# -gt 0 ]]; do
+    arg=$1 ; shift
+    case $arg in
+        -c|--change-addr)
+            CHANGE_ADDR="${1?'missing argument to change-addr'}"
+            shift
+            ;;
+        -s|--skey)
+            SKEY="${1?'missing argument to skey'}"
+            shift
+            ;;
+        -i|--in)
+            IN="${1?'missing argument to in'}"
+            shift
+            ;;
+        -t|--to-addr)
+            TO_ADDR="${1?'missing argument to to-addr'}"
+            shift
+            ;;
+        -a|--amount)
+            AMOUNT="${1?'missing argument to amount'}"
+            shift
+            ;;
+        -d|--dir)
+            DIR="${1?'missing argument to dir'}"
+            shift
+            ;;
+        -f|--filename)
+            FILENAME="${1?'missing argument to filename'}"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -v|--verbose)
+            VERBOSE="${1?'missing argument to verbose'}"
+            shift
+            ;;
+        *) echo "unknown args: $*"; usage ; exit 1;;
+    esac
+done
+
+if $VERBOSE; then
+    echo ""
+    echo "change-addr = $CHANGE_ADDR"
+    echo "skey        = $SKEY"
+    echo "in          = $IN"
+    echo "to-addr     = $TO_ADDR"
+    echo "amount      = $AMOUNT"
+    echo "dir         = $DIR"
+    echo "filename    = $FILENAME"
+fi
+
+fail () {
+    echo ""
+    echo "ERROR: $1"
+    usage
+    exit 1
+}
+
+if [[   -z "$CHANGE_ADDR" ]]; then fail "  -z '\$CHANGE_ADDR'" ; fi
+if [[   -z "$SKEY"        ]]; then fail "  -z '\$SKEY'"        ; fi
+if [[   -z "$IN"          ]]; then fail "  -z '\$IN'"          ; fi
+if [[   -z "$TO_ADDR"     ]]; then fail "  -z '\$TO_ADDR'"     ; fi
+if [[   -z "$AMOUNT"      ]]; then fail "  -z '\$AMOUNT'"      ; fi
+if [[ ! -d "$DIR"         ]]; then fail "! -d '\$DIR'"         ; fi
+if [[   -z "$FILENAME"    ]]; then fail "  -z '\$FILENAME'"    ; fi
+
+TX="${TO_ADDR} ${AMOUNT} lovelace"
+
+cardano-cli transaction build                    \
+  --alonzo-era                                   \
+  --testnet-magic    "${CNTN_MAGIC}"             \
+  --change-address   "${CHANGE_ADDR}"            \
+  --tx-in            "${IN}"                     \
+  --tx-out           "${TX}"                     \
+  --out-file         "${DIR}/${FILENAME}".body
+
+cardano-cli transaction sign                     \
+  --testnet-magic    "${CNTN_MAGIC}"             \
+  --tx-body-file     "${DIR}/${FILENAME}".body   \
+  --signing-key-file "${SKEY}"                   \
+  --out-file         "${DIR}/${FILENAME}".signed
+
+cardano-cli transaction submit                   \
+  --testnet-magic    "${CNTN_MAGIC}"             \
+  --tx-file          "${DIR}/${FILENAME}".signed

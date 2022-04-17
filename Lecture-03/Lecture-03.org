@@ -13,18 +13,22 @@ Source : https://github.com/input-output-hk/plutus-pioneer-program
 - parameterized contracts
 - deploying to Cardano testnet via CLI
 
+*environment*
+
 #+begin_src
 export C=~/Cardano
-export CN=${C}/cardano-node-1.34.1
-export PATH=${CN}:${PATH}
+export PPME=${C}/plutus-pioneer-program-me
+. ${PPME}/start-node-testnet/start-node-testnet.env
 export PP3=${C}/plutus-pioneer-program/code/week03
 export PPME3=${C}/plutus-pioneer-program-me/Lecture-03
 export PP3TN=${PP3}/testnet
 export PPME3TN=${PPME3}/testnet
 export PP3SRC=${PP3}/src/Week03
-export CARDANO_NODE_SOCKET_PATH=${PPME3TN}/node.socket
-export MAGIC=1097911063
 #+end_src
+
+*build*
+
+[[../0-README-setup.org::weekly-steps]]
 
 ------------------------------------------------------------------------------
 * Part 1 - Configuring Playground Time Out
@@ -247,11 +251,9 @@ Run in playground like =Vesting.hs=, except
 - Wallet 2 : grab =1596059111000=
 
 ------------------------------------------------------------------------------
-* Part 6 - Deploying to the Cardano Testnet
+* Part 6 - Deploying to the Cardano Testnet via the CLI
 
 https://www.youtube.com/watch?v=ABtffZPoUqU
-
-via the CLI
 
 ** download cardano node
 
@@ -339,8 +341,8 @@ ${CN}/cardano-cli address key-gen \
 
 # need payment addresses for the above key pairs
 # ${PP3TN}/testnet-shelley-genesis.json contains "networkMagic": 1097911063
-
-export MAGIC=1097911063
+export MAGIC=`cat ${PP3TN}/testnet-shelley-genesis.json | grep networkMagic | cut -d':' -f2 | cut -d',' -f1`
+echo ${MAGIC}
 
 ${CN}/cardano-cli address build \
      --payment-verification-key-file ${PPME3TN}/01.vkey \
@@ -367,7 +369,6 @@ ls -alF ${CARDANO_NODE_SOCKET_PATH}
 ${CN}/cardano-cli query utxo --address $(cat ${PPME3TN}/01.addr) --testnet-magic ${MAGIC}
 
 # To fund 02.addr have to wait 24 hours after funding 01.addr (unless you have an API key).
-
 # Workaround : use cardano-cli to make TX that sends ADA from 01.addr to 02.addr
 cp ${PP3TN}/send.sh ${PPME3TN}
 # ${PPME3TN}/send.sh
@@ -397,7 +398,7 @@ uses =Cardano.Api=
 - has a different (but similar) data type than Plutus
 
 =Deploy=
-- converts Plutus data to Cardano.Api data to JSON.
+- converts Plutus data to Cardano.Api data to JSON
 
 #+begin_src
 # assumes correct tag already checked out

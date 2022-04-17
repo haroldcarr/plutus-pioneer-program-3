@@ -2,17 +2,175 @@
 
 Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-10
 
+How to use Plutus in relation to staking (demonstrated on private testnet with short epochs).
+
 #+begin_comment
  (eepitch-shell)
  (eepitch-kill)
  (eepitch-shell)
 #+end_comment
 
+*environment*
+
 #+begin_src
 export C=~/Cardano
+export CN=${C}/cardano-node-1.34.1
 
 export PP10=${C}/plutus-pioneer-program/code/week10
 export PPME10=${C}/plutus-pioneer-program-me/Lecture-10
 
 export PP10SRC=${PP10}/src/Week10
+
+export PPME3=${C}/plutus-pioneer-program-me/Lecture-03
+export PPME3TN=${PPME3}/testnet
+export CARDANO_NODE_SOCKET_PATH=${PPME3TN}/node.socket
 #+end_src
+
+*build*
+
+[[../0-README-setup.org::weekly-steps]] (but do steps in Part 2 below first)
+
+------------------------------------------------------------------------------
+* Part 1 - Introduction
+
+https://youtu.be/AnID8hn68DA
+
+PAB still not in a state to make easy to deploy on real network.
+- Did something similar in lecture 06.
+
+So, instead, will do staking example.
+
+Things take a lot of time on testnet and mainnet.
+- e.g., delegate to stake pool, then it takes days before receiving rewards at end of 5 day epochs.
+
+Will run a private testnet with smaller epochs.
+
+------------------------------------------------------------------------------
+* Part 2 - The Private Testnet
+
+https://youtu.be/xhEMEH0C2XU
+
+This lecture uses a submodule to set up the private subnet.
+
+#+begin_src
+cd ${C}/plutus-pioneer-program
+git pull --recurse-submodules
+#+end_src
+
+Need to edit a file to workaround an error:
+
+#+begin_src
+cp ${C}/plutus-apps/shell.nix ${PPME10}/plutus-apps-shell.nix-lecture-10
+
+# edit ${PPME10}/plutus-apps-shell.nix-lecture-10
+# delete line 105: cardano-wallet.cardano-wallet
+
+cd ${C}/plutus-apps
+mv shell.nix
+cp ${PPME10}/plutus-apps-shell.nix-lecture-10 shell.nix
+
+# WHEN DONE WITH LECTURE-10
+cd ${C}/plutus-apps
+rm shell.nix
+cp shell.nix-ORIG shell.nix
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 3 - Plutus & Staking
+
+https://youtu.be/kFi-7HyBN-s
+
+https://playground.plutus.iohkdev.io/doc/haddock/plutus-ledger-api/html/Plutus-V1-Ledger-Contexts.html
+
+#+begin_example
+data ScriptContext
+  ScriptContext
+    scriptContextTxInfo  :: TxInfo
+    scriptContextPurpose :: ScriptPurpose
+
+data ScriptPurpose
+  Minting    CurrencySymbol
+  Spending   TxOutRef
+  Rewarding  StakingCredential
+  Certifying DCert
+#+end_example
+
+So far, lecture have used =Minting= and =Spending=.
+
+=Rewarding= and =Certifying= related to staking.
+
+=StakingCredential= : staking address
+
+instead of using PK/SK pair to create a stake address, use a Plutus script
+- hash of script will give a stake address : a script stake address
+
+To withdraw rewards for a normal stake addres, have to provide a witness
+that entity is allowed to do that : provide signing key for stake address.
+
+=Certifying DCert=
+- certifications attached to TX
+- important for staking entity's registration delegation and de-registration certs
+
+When creating a stake address, first register it by creating TX containing
+registration cert for stake address.
+
+To delegate to a pool or change an existing validation
+use a TX that contains a delegation cert.
+- that cert contains the pool to delegate to
+
+Can unregister a stake address and get original deposit back.
+
+This lecture focuses on =Rewarding=.
+
+#+begin_example
+Data TxInfo
+  ...
+  txInfoDCert :: [DCert]                        -- digests of certs
+  txInfoWdrl  :: [(StakingCredential, Integer)] -- withdrawals
+  ...
+#+end_example
+
+To withdraw, Plutus script corresponding to =StakingCredential= is run.
+
+See annotated
+
+#+begin_comment
+cp ${PP10SRC}/Staking.hs ${PPME10}
+#+end_comment
+
+See annotated
+- [[./Staking.hs]]
+
+#+begin_src
+cat ${PP10SRC}/Deploy.hs
+#+end_src
+- =writeStakeValidator= : copied/editted from Week03
+- the rest copied/editted from Week06
+
+#+begin_src
+cat ${PP10}/app/write-stake-validator.hs
+#+end_src
+- given filename and "always" address
+
+------------------------------------------------------------------------------
+* Part 4 - Trying it on the Testnet
+
+https://youtu.be/5cBu4J5RRZ4
+
+#+begin_src
+# start cardano-node running testnet (see Week03)
+
+# create another user : lars script, which I do inline below
+cat ${PP10}/scripts/make-user2.sh
+
+TODO
+#+end_src
+
+------------------------------------------------------------------------------
+* Part 5 - Conclusion
+
+https://youtu.be/9oWmDXoxtmI
+
+Last lecture of course.
+
+No homework.  Could try on public testnet (need to wait for epoch ends).

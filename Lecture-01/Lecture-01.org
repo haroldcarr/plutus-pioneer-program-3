@@ -7,6 +7,10 @@ Source : https://github.com/input-output-hk/plutus-pioneer-program
 - auction contract
 - playground
 
+*build*
+
+[[../0-README-setup.org::weekly-steps]]
+
 ------------------------------------------------------------------------------
 * Part 1 - Welcome and Introduction
 

@@ -8,7 +8,7 @@ Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-8
  (eepitch-shell)
 #+end_comment
 
-environment
+*environment*
 
 #+begin_src
 export C=~/Cardano
@@ -20,20 +20,9 @@ export PP8SRC=${PP8}/src/Week08
 export PP8TST=${PP8}/test/Spec
 #+end_src
 
-build
+*build*
 
-#+begin_src
-cd ${PP8}
-git checkout main
-git pull
-tag=`cat ${PP8}/cabal.project | grep -A 1 "input-output-hk/plutus-apps.git" | grep tag | cut -d':' -f2`
-echo ${tag}
-cd ${C}/plutus-apps
-git checkout ${tag}
-nix-shell
-cd ${PP8}
-cabal build
-#+end_src
+[[../0-README-setup.org::weekly-steps]]
 
 ------------------------------------------------------------------------------
 * Part 1 - Introduction

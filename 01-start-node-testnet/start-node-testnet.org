@@ -1,0 +1,65 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+------------------------------------------------------------------------------
+* start a node
+
+Assumes [[configuration]] (below) has been done.
+
+Note: the first time this is run, it  will take hours until the test-net data
+is downloaded and up-to-date.
+
+it creates ~srwx------   1 <user> <group> <date> <time> node.socket=~
+
+#+begin_src
+~/Cardano/plutus-pioneer-program-me/start-node-testnet/start-node-testnet >> /tmp/start-node-testnet.log 2>&1 &
+#+end_src
+
+------------------------------------------------------------------------------
+<<configuration>>
+* configuration
+
+--------------------------------------------------
+** download/update cardano node
+
+- https://github.com/input-output-hk/cardano-node
+- click : =Releases=
+- =Cardano Node 1.34.1=
+- click : =Downloads=
+- click : =Hydra binaries=
+  - Mac : https://hydra.iohk.io/build/13065616/download/1/cardano-node-1.34.1-macos.tar.gz
+
+#+begin_src
+cd    ~/Cardano
+mkdir cardano-node-1.34.1
+cd    cardano-node-1.34.1
+tar   xvf ~/Downloads/cardano-node-1.34.1-macos.tar.gz
+./cardano-node --version
+#+end_src
+
+--------------------------------------------------
+** configuration files
+
+=./config= dir contains config files that were downloaded via
+
+- https://github.com/input-output-hk/cardano-node
+- click : =Releases=
+- =Cardano Node 1.34.0=
+- click : =Downloads=
+- click : =Configuration Files=
+  - get =testnet=
+    - =config=, =byronGenesis=, =shellyGenesis=, =alonzoGenesis=, =topology=
+      - do /not/ need : =db sync config= nor =rest config=
+    - put them in =./config=
+
+--------------------------------------------------
+** cardano-node-db
+
+#+begin_src
+mkdir ${C}/cardano-node-db
+#+end_src

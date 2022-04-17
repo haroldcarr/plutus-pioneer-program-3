@@ -8,6 +8,8 @@ Source : https://github.com/input-output-hk/plutus-pioneer-program#lecture-9
  (eepitch-shell)
 #+end_comment
 
+*environment*
+
 #+begin_src
 export C=~/Cardano
 
@@ -16,6 +18,10 @@ export PPME9=${C}/plutus-pioneer-program-me/Lecture-09
 
 export PP9SRC=${PP9}/src/Week09
 #+end_src
+
+*build*
+
+[[../0-README-setup.org::weekly-steps]]
 
 ------------------------------------------------------------------------------
 * Part 1 - Introduction

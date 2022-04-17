@@ -5,7 +5,7 @@
   },
   "cicPort": 9083,
   "cicSecurityParam": 2160,
-  "cicSocketPath": "/Users/hcarr/Cardano/plutus-pioneer-program-me/Lecture-3/testnet/node.socket",
+  "cicSocketPath": "/Users/hcarr/Cardano/plutus-pioneer-program-me/Lecture-03/testnet/node.socket",
   "cicDbPath": "/Users/hcarr/Cardano/chain-index.db",
   "cicNetworkId": {
     "contents": {

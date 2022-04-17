@@ -54,6 +54,11 @@ edit =/etc/nix/nix.conf= to contain
 #+end_comment
 
 #+begin_src
+export C=~/Cardano
+#+end_src
+
+
+#+begin_src
 build-users-group = nixbld
 
 substituters        = https://hydra.iohk.io https://iohk.cachix.org https://cache.nixos.org/
@@ -71,6 +76,8 @@ extra-experimental-features = flakes
 restart mac
 
 #+begin_src
+mkdir ${C}
+cd ${C}
 git clone https://github.com/input-output-hk/plutus-apps
 cd plutus-apps
 git checkout 829a409ba34bae36c6d99f50e099b0a177d76ceb
@@ -96,7 +103,7 @@ Interpreter ready
 in another terminal
 
 #+begin_src
-cd plutus-apps
+cd ${C}/plutus-apps
 nix-shell
 sudo npm install -g npm
 cd plutus-playground-client
@@ -118,34 +125,34 @@ https://localhost:8009/
 <<weekly-steps>>
 * weekly steps (after doing above initial steps)
 
-credit to =tinito387= in discord
-
 ** pull and checkout tag
 
 #+begin_src
-# 1
-cd plutus-pioneers-program
-
-# 2
-git pull
-
-# 3 (0Y == number of the week/lecture)
-cd plutus-pioneers-program/code/week0Y
-
-# 4
-# get the tag in cabal.project for source-repository-package .../plutus-apps.git
-
-# 5
-cd plutus-apps
-
-# 6
+cd ${C}/plutus-pioneer-program
 git checkout main
-
-# 7
 git pull
+# ?? == number of the week/lecture
+cd ${C}/plutus-pioneer-program/code/week??
+TAG=`cat ./cabal.project | grep -A 1 "https://github.com/input-output-hk/plutus-apps" | grep tag | cut -d':' -f2`
+echo ${TAG}
+cd ${C}/plutus-apps
+git checkout main
+git pull
+git checkout ${TAG}
+#+end_src
 
-# 8
-git checkout 'tag from step 4'
+** =cabal repl=
+
+To do =cabal repl= for a particular week:
+
+#+begin_src
+cd ${C}/plutus-apps
+nix-shell
+cd ${C}/plutus-pioneer-program/code/week??/
+cabal clean
+cabal update
+cabal build
+cabal repl
 #+end_src
 
 ** playground
@@ -155,68 +162,28 @@ The following steps are only needed to use the playground.
 They are not needed for using =cabal repl=.
 
 #+begin_src
-# 9
 nix-build -A plutus-playground.server
-
-# 10
 nix-shell
-
-# 11
 cd plutus-playground-server/
-
-# 12 run Plutus Playground Server
 plutus-playground-server
 
 --------------------------
-# 13 in another terminal
-cd plutus-apps
 
-# 14
+# in another terminal
+cd ${C}/plutus-apps
 nix-shell
-
-# 15
 cd plutus-playground-client
-
-# 16 start Plutus Playground Client
+# start Plutus Playground Client
 npm run start
-#+end_src
-
-** =cabal repl=
-
-To do =cabal repl= for a particular week:
-
-#+begin_src
-# 17 in another terminal
-cd plutus-apps
-
-# 18
-nix-shell
-
-# 19
-cd plutus-pioneers-program
-
-# 20
-cd code/week0Y/
-
-# 20 a, b : do these steps if #21 and/or #22 fail
-cabal clean
-cabal update
-
-# 21
-cabal build
-
-# 22
-cabal repl
 #+end_src
 
 ------------------------------------------------------------------------------
 * a problem and solution/hack
 
-
 When I was trying to do =cabal repl= for Week4, I had the following problem:
 
 #+begin_src
-> cd plutus-apps
+> cd ${C}/plutus-apps
 
 > git checkout ea1bfc6a49ee731c67ada3bfb326ee798001701a
 HEAD is now at ea1bfc6a4 SCP-3305 reverted #57 (#275)

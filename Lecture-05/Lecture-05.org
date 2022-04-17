@@ -10,6 +10,10 @@ how to mint native tokens and NFTs
  (eepitch-shell)
 #+end_comment
 
+*build*
+
+[[../0-README-setup.org::weekly-steps]]
+
 ------------------------------------------------------------------------------
 * Part 1 - Start
 

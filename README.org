@@ -22,9 +22,11 @@ Contents
   - parameterized contracts
   - deploying to Cardano testnet via CLI
 - [[./Lecture-04/Lecture-04.org][lecture 04]]
-  - EmulatorTrace monad (enables programmatic testing, rather than using playground)
+  - EmulatorTrace monad
+    - enables programmatic testing, rather than using playground
 - [[./Lecture-05/Lecture-05.org][lecture 05]]
-  - how to mint native tokens and NFTs (test with EmulatorTrace)
+  - how to mint native tokens and NFTs
+  - test with EmulatorTrace
 - [[./Lecture-06/Lecture-06.org][lecture 06]]
   - interact with Cardano testnet via CLI and PAB
 - [[./Lecture-07/Lecture-07.org][lecture 07]]
@@ -36,4 +38,5 @@ Contents
 - [[./Lecture-09/Lecture-09.org][lecture 09]]
   - Marlowe : DSL for financial contracts
 - [[./Lecture-10/Lecture-10.org][lecture 10]]
-  - TODO
+  - how to use Plutus in relation to staking
+  - demonstrated on private testnet with short epochs

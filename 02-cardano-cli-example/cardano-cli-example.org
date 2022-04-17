@@ -1,0 +1,114 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+------------------------------------------------------------------------------
+*environment*
+
+[[../01-start-node-testnet/start-node-testnet.org]]
+
+#+begin_src
+. ~/Cardano/plutus-pioneer-program-me/cardano.env
+export CCE=${PPME}/02-cardano-cli-example
+#+end_src
+
+------------------------------------------------------------------------------
+* setup keys and addresses
+
+2 wallets for parameterized contract example.
+
+#+begin_src
+cardano-cli                 --help
+cardano-cli address         --help
+cardano-cli address key-gen --help
+
+export DATE=`date "+%Y-%m-%d-%H-%M-%S"`
+echo ${DATE}
+
+cardano-cli address key-gen \
+  --verification-key-file ${CCE}/01-${DATE}.vkey \
+  --signing-key-file      ${CCE}/01-${DATE}.skey
+
+cardano-cli address key-gen \
+  --verification-key-file ${CCE}/02-${DATE}.vkey \
+  --signing-key-file      ${CCE}/02-${DATE}.skey
+
+# payment addresses for above key pairs
+
+cardano-cli address build   --help
+
+cardano-cli address build \
+  --payment-verification-key-file ${CCE}/01-${DATE}.vkey \
+  --testnet-magic                 ${CNTN_MAGIC} \
+  --out-file                      ${CCE}/01-${DATE}.addr
+
+cardano-cli address build \
+  --payment-verification-key-file ${CCE}/02-${DATE}.vkey \
+  --testnet-magic                 ${CNTN_MAGIC} \
+  --out-file                      ${CCE}/02-${DATE}.addr
+#+end_src
+
+------------------------------------------------------------------------------
+* initial funding via faucet
+
+no UTxOs at either address:
+
+#+begin_src
+cardano-cli query utxo --address $(cat ${CCE}/01-${DATE}.addr) --testnet-magic ${CNTN_MAGIC}
+cardano-cli query utxo --address $(cat ${CCE}/02-${DATE}.addr) --testnet-magic ${CNTN_MAGIC}
+#+end_src
+
+get test ADA via https://testnets.cardano.org/en/testnets/cardano/tools/faucet/
+- cut/paste:
+#+begin_src
+cat ${CCE}/01-${DATE}.addr && echo
+#+end_src
+ into =address= form
+- click =request funds=
+
+see if it worked (only UTxO at 01, not 02):
+
+#+begin_src
+# note: cardano-node must be fully synced to see the result
+cardano-cli query utxo --address $(cat ${CCE}/01-${DATE}.addr) --testnet-magic ${CNTN_MAGIC}
+cardano-cli query utxo --address $(cat ${CCE}/02-${DATE}.addr) --testnet-magic ${CNTN_MAGIC}
+#+end_src
+
+to fund
+#+begin_src
+cat ${CCE}/02-${DATE}.addr && echo
+#+end_src
+have to wait 24 hours after funding 01-${DATE}.addr (unless you have an API key)
+
+------------------------------------------------------------------------------
+* TX that sends ADA from 01-${DATE}.addr to 02-${DATE}.addr
+
+(note: can be used to avoid waiting 24 hours after faucet funding to fund other addresses)
+
+#+begin_src
+TX_HASH=`cardano-cli query utxo --address $(cat ${CCE}/01-${DATE}.addr) --testnet-magic ${CNTN_MAGIC} | grep "lovelace" | cut -d' ' -f1`
+
+TX_IX=`cardano-cli   query utxo --address $(cat ${CCE}/01-${DATE}.addr) --testnet-magic ${CNTN_MAGIC} | grep "lovelace" | tr -s [:blank:] | cut -d' ' -f2`
+echo ${TX_HASH} ${TX_IX}
+
+${CCE}/send --change-addr $(cat ${CCE}/01-${DATE}.addr) \
+            --skey              ${CCE}/01-${DATE}.skey  \
+            --in          "${TX_HASH}#${TX_IX}"         \
+            --to-addr     $(cat ${CCE}/02-${DATE}.addr) \
+            --amount      10000000                      \
+            --dir         /tmp                          \
+            --filename    send-tx-${DATE}               \
+            --verbose     true
+
+cat /tmp/send-tx-${DATE}.body
+cat /tmp/send-tx-${DATE}.signed
+# see if it worked : 01 should have less; 02 should now have some
+# my have to wait for results
+cardano-cli query utxo --address $(cat ${CCE}/01-${DATE}.addr) --testnet-magic ${CNTN_MAGIC}
+cardano-cli query utxo --address $(cat ${CCE}/02-${DATE}.addr) --testnet-magic ${CNTN_MAGIC}
+#+end_src
+

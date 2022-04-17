@@ -4,6 +4,10 @@ Source : https://github.com/input-output-hk/plutus-pioneer-program
 
 - EmulatorTrace monad (enables programmatic testing, rather than using playground)
 
+*build*
+
+[[../0-README-setup.org::weekly-steps]]
+
 ------------------------------------------------------------------------------
 * Part 1 - Introduction
 
@@ -69,7 +73,7 @@ constructor
 
 see "weekly steps" in [[../0-README-setup.org][0-README-setup]] for how steps /before/ =cabal repl=
 
-#+begin_example
+#+begin_src
 cd plutus-pioneer-program/code/week04
 cabal repl
 
@@ -86,7 +90,7 @@ def :: EmulatorConfig
 -- simulation that does not do anything
 runEmulatorTrace def (return ())
 -- ...
-#+end_example
+#+end_src
 
 - =runEmulatorTraceIO= /::/ =EmulatorTrace () -> IO ()=
   - Runs runEmulatorTrace with default config.
@@ -102,7 +106,7 @@ runEmulatorTraceIO (return ())
 
 see annotated [[./Trace.hs][Trace.hs]]
 
-#+begin_example
+#+begin_src
 cd plutus-pioneer-program/code/week04
 cabal repl
 
@@ -116,7 +120,7 @@ test
 -- - USER LOG
 -- - Final balances
 -- note : wallets seem to be sorted by hash
-#+end_example
+#+end_src
 
 Change =Trace.hs=
 - from =waitUntilSlot 20=
@@ -137,7 +141,7 @@ https://www.youtube.com/watch?v=yKX5Ce8Y0VQ
 
 see annotated [[./Trace.hs][Trace.hs]]
 
-#+begin_example
+#+begin_src
 cd plutus-pioneer-program/code/week04
 cabal repl
 
@@ -183,7 +187,7 @@ test4
 -- search for
 -- - SlotAdd Slot
 -- - USER LOG
-#+end_example
+#+end_src
 
 - give data from outside  to contract via =callEndpoint=
 - give data from contract to outside  via =tell=
@@ -219,7 +223,7 @@ Write =payTrace= =EmulatorTrace= to exercise =payContract=.
 `PayTest2`
 - makes payments of 1000 and 20 Ada
 
-#+begin_example
+#+begin_src
 cabal repl
 :l src/Homework.hs
 
@@ -229,7 +233,7 @@ payTest1
 
 payTest2
 -- see that Wallet balances do NOT change
-#+end_example
+#+end_src
 
 `payTest2`
 - fails because running with `def` Wallet values (100 Ada)

@@ -17,7 +17,7 @@ walletServerConfig:
     baseUrl: http://localhost:8090
 
 nodeServerConfig:
-  pscSocketPath: /Users/hcarr/Cardano/plutus-pioneer-program-me/Lecture-3/testnet/node.sock
+  pscSocketPath: /Users/hcarr/Cardano/plutus-pioneer-program-me/Lecture-03/testnet/node.sock
   pscBaseUrl: "localhost"
   pscKeptBlocks: 2160
   pscNetworkId: "1097911063" # Testnet network ID (main net = empty string)
@@ -46,6 +46,7 @@ developmentOptions:
   pabResumeFrom:
     # "tag" : "PointAtGenesis" }
       { "tag" : "Point"
-      , "pointBlockId" : "94c0830fccf9fffaf141c206301c35ec7b8419501a34e99a88a13f68813be765"
-      , "pointSlot" : {"getSlot" : 52832454}
+      , "pointBlockId" : "185bff743a856d1fe68ddd51b5401292a102288ef98e5b7af733cdeb7e4ed044"
+      , "pointSlot" : {"getSlot" : 55608208}
       }
+

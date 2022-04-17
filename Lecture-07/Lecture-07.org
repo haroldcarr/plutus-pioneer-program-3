@@ -12,6 +12,8 @@ Write a game where the game state
  (eepitch-shell)
 #+end_comment
 
+*environment*
+
 #+begin_src
 export C=~/Cardano
 
@@ -20,6 +22,10 @@ export PPME7=${C}/plutus-pioneer-program-me/Lecture-07
 
 export PP7SRC=${PP7}/src/Week07
 #+end_src
+
+*build*
+
+[[../0-README-setup.org::weekly-steps]]
 
 ------------------------------------------------------------------------------
 * Part 1 - Introduction
