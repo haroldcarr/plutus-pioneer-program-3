@@ -265,8 +265,8 @@ must first start other applications
 see Week03
 
 https://github.com/input-output-hk/plutus-apps/blob/main/plutus-pab/test-node/README.md
-- Instructions for running a public testnet end-to-end integration test
-- the following is doing these steps
+- instructions for running a public testnet end-to-end integration test
+- the following is doing the steps from that link
 
 ** start-testnet-wallet
 

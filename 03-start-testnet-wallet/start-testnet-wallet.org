@@ -1,0 +1,24 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+* environment
+
+[[../01-start-node-testnet]]
+
+* start-testnet-wallet
+
+#+begin_src
+which cardano-wallet
+
+export C=~/Cardano
+cd ${C}/plutus-apps
+nix-shell
+which cardano-wallet
+
+~/Cardano/plutus-pioneer-program-me/03-start-testnet-wallet/start-testnet-wallet >> /tmp/start-testnet-wallet.log 2>&1 &
+#+end_src

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+. "${HOME}/Cardano/plutus-pioneer-program-me/cardano.env"
+
+cardano-wallet serve \
+  --testnet     "${SNT}/config/testnet-byron-genesis.json" \
+  --node-socket "${CARDANO_NODE_SOCKET_PATH}"
