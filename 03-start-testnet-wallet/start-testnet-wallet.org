@@ -15,8 +15,7 @@
 #+begin_src
 which cardano-wallet
 
-export C=~/Cardano
-cd ${C}/plutus-apps
+cd ~/Cardano/plutus-apps
 nix-shell
 which cardano-wallet
 

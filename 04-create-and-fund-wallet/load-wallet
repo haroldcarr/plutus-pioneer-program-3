@@ -1,0 +1,64 @@
+#!/bin/bash
+
+VERBOSE=false
+
+usage () {
+    echo ""
+    echo "load-wallet [OPTIONS]"
+    echo "  load given wallet into wallet backend"
+    echo ""
+    echo "  Options:"
+    echo ""
+    echo "    --recovery-info"
+    echo "      full path and filename of wallet recovery file"
+    echo ""
+    echo "    --dir"
+    echo "      where to write the output file"
+    echo ""
+    echo "    --filename"
+    echo "      name of output file (contains assigned wallet ID)"
+    echo ""
+    echo "    --help"
+    echo "      usage"
+    echo ""
+    echo "    --verbose"
+    echo "      more info"
+}
+
+while [[ $# -gt 0 ]]; do
+    arg=$1 ; shift
+    case $arg in
+        -r|--recovery-info)
+            RECOVERY_INFO="${1?'missing argument to recovery_info'}"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -v|--verbose)
+            VERBOSE="${1?'missing argument to verbose'}"
+            shift
+            ;;
+        *) echo "unknown args: $*"; usage ; exit 1;;
+    esac
+done
+
+if $VERBOSE; then
+    echo ""
+    echo "recovery-info = $RECOVERY_INFO"
+fi
+
+fail () {
+    echo ""
+    echo "ERROR: $1"
+    usage
+    exit 1
+}
+
+if [[   -z "$RECOVERY_INFO" ]]; then fail "  -z '\$RECOVERY_INFO'" ; fi
+
+curl -H "content-type: application/json" \
+     -XPOST                              \
+     -d @${RECOVERY_INFO}                \
+     localhost:8090/v2/wallets

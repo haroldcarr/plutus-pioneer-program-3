@@ -1,0 +1,79 @@
+#!/bin/bash
+
+VERBOSE=false
+
+usage () {
+    echo ""
+    echo "create-wallet-recovery-info [OPTIONS]"
+    echo "  generate Cardano wallet recovery info."
+    echo ""
+    echo "  Options:"
+    echo ""
+    echo "    --name"
+    echo "      wallet name"
+    echo ""
+    echo "    --passphrase"
+    echo "      wallet passphrase/password"
+    echo ""
+    echo "    --help"
+    echo "      usage"
+    echo ""
+    echo "    --verbose"
+    echo "      more info"
+}
+
+while [[ $# -gt 0 ]]; do
+    arg=$1 ; shift
+    case $arg in
+        -n|--name)
+            NAME="${1?'missing argument to name'}"
+            shift
+            ;;
+        -p|--passphrase)
+            PASSPHRASE="${1?'missing argument to passphrase'}"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -v|--verbose)
+            VERBOSE="${1?'missing argument to verbose'}"
+            shift
+            ;;
+        *) echo "unknown args: $*"; usage ; exit 1;;
+    esac
+done
+
+if $VERBOSE; then
+    echo ""
+    echo "name       = $NAME"
+    echo "passphrase = $PASSPHRASE"
+fi
+
+fail () {
+    echo ""
+    echo "ERROR: $1"
+    usage
+    exit 1
+}
+
+if [[   -z "$NAME"       ]]; then fail "  -z '\$NAME'"       ; fi
+if [[   -z "$PASSPHRASE" ]]; then fail "  -z '\$PASSPHRASE'" ; fi
+
+PHRASE=$(cardano-wallet recovery-phrase generate)
+
+X=''
+SEP=''
+for WORD in $PHRASE
+do
+    X=$X$SEP'"'$WORD'"'
+    SEP=', '
+done
+
+cat <<- EOM
+{ "name": "${NAME}"
+, "mnemonic_sentence": [$X]
+, "passphrase": "${PASSPHRASE}"
+}
+EOM

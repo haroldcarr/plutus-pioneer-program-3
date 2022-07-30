@@ -2,12 +2,12 @@
 
 HERE="${BASH_SOURCE%/*}"
 
-. "${HOME}/Cardano/plutus-pioneer-program-me/cardano.env"
+. "${HOME}/Cardano/plutus-pioneer-program-me/hc-cardano.env"
 
 cardano-node run                                         \
   --topology      "${HERE}"/config/testnet-topology.json \
-  --database-path "${C}"/cardano-node-db                 \
+  --database-path "${HC_CARDANO_NODE_DB}"                \
   --socket-path   "${CARDANO_NODE_SOCKET_PATH}"          \
-  --host-addr     127.0.0.1                              \
-  --port          3001                                   \
+  --host-addr     "${HC_CARDANO_NODE_HOST_ADDR}"         \
+  --port          "${HC_CARDANO_NODE_PORT=3001}"         \
   --config        "${HERE}"/config/testnet-config.json

@@ -1,0 +1,87 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+https://developers.cardano.org/docs/integrate-cardano/creating-wallet-faucet/#creating-a-wallet-with-cardano-wallet
+
+------------------------------------------------------------------------------
+* environment
+
+#+begin_src
+export HC_C=~/Cardano
+
+../03-start-testnet-wallet
+
+cd ${HC_C}/plutus-apps
+nix-shell
+#+end_src
+
+------------------------------------------------------------------------------
+* create / load wallet
+
+in the shell where =start-testnet-wallet= was run
+
+--------------------------------------------------
+** create-wallet-recovery
+
+WNAME=`date "+WALLET-%Y-%m-%d-%H-%M-%S"`
+echo ${WNAME}
+
+#+begin_src
+cd ${HC_C}/plutus-pioneer-program-me/04-create-and-fund-wallet
+
+./create-wallet-recovery-info --name ${WNAME} --passphrase ${WNAME}-passphrase > ${WNAME}-recovery-info.json
+cat ${WNAME}-recovery-info.json
+#+end_src
+
+--------------------------------------------------
+** load-wallet
+
+inform wallet backend about new wallet
+
+#+begin_src
+cardano-wallet wallet list
+
+cd ${HC_C}/plutus-pioneer-program-me/04-create-and-fund-wallet
+./load-wallet --recovery-info ${WNAME}-recovery-info.json
+
+cardano-wallet wallet list
+
+# get wallet ID (assuming only ONE wallet exists)
+WID=`cardano-wallet wallet list | grep id | tr -s [:blank:] | cut -d' ' -f3 | cut -d'"' -f2`
+echo ${WID}
+
+# get wallet info
+cardano-wallet wallet get ${WID}
+#+end_src
+
+------------------------------------------------------------------------------
+* get an unused address for wallet
+
+WADDR=`curl --url "http://localhost:${HC_CARDANO_WALLET_SERVE_PORT}/v2/wallets/${WID}/addresses?state=unused" | jq '.[0].id' | cut -d'"' -f2`
+echo ${WADDR} > ${WNAME}-addr
+cat ${WNAME}-addr
+
+------------------------------------------------------------------------------
+* fund wallet
+
+paste WADDR into https://developers.cardano.org/docs/integrate-cardano/testnet-faucet
+
+------------------------------------------------------------------------------
+* (optional) import / link wallet into Daedalus or Yoroi
+
+link up D or Y wallet to wallet created above
+
+steps not shown
+- import 'restore-wallet.json' into a wallet
+  - Yoroi    https://yoroi-wallet.com/#/
+    - browser extension
+    - uses backend server to avoid downloading blockchain
+    - supposedly does not expose sensitive data (e.g., private keys) to server
+  - Daedalus https://daedaluswallet.io/
+    - requires the entire blockchain to be downloaded
+

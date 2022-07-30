@@ -294,7 +294,9 @@ cat ${PPME6TN}/restore-wallet.json
 ** import / link
 
 8:24 : steps not shown
-- import 'restore-wallet.json' into your Daedalus or Yoroi wallet
+- import 'restore-wallet.json' into a wallet
+  - Daedalus https://daedaluswallet.io/
+  - Yoroi    https://yoroi-wallet.com/#/
 - link up D or Y wallet to wallet created above
 
 ** 8:42 : fund wallet

@@ -1,0 +1,6 @@
+https://playground.plutus.iohkdev.io/doc/plutus/explanations/pab.html#what-is-the-pab
+
+https://github.com/input-output-hk/plutus-apps/tree/main/plutus-pab/test-node
+
+https://plutus-community.readthedocs.io/en/latest/#Lectures/Cohort_03/Lecture_06/#preparation-for-lecture-6
+

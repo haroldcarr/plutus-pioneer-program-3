@@ -1,0 +1,38 @@
+#+OPTIONS:     H:6 num:nil toc:nil \n:nil @:t ::t |:t ^:t f:t TeX:t ...
+
+#+begin_comment
+ (eepitch-shell)
+ (eepitch-kill)
+ (eepitch-shell)
+#+end_comment
+
+* environment
+
+#+begin_src
+cd ~/Cardano/plutus-apps
+nix-shell
+cabal build all
+#+end_src
+
+* =chain-index-config.json=
+
+#+begin_src
+cd ~/Cardano/plutus-apps
+cabal exec plutus-chain-index -- default-config /tmp/chain-index-config.json
+#+end_src
+
+edit:
+- =cicSocketPath= : to point to expanded ${CARDANO_NODE_SOCKET_PATH}
+- =cicDbPath=     : to point to expanded ${HC_CHAIN_INDEX}
+- =cicNetworkId.contents.unNetworkMagic= : set to expanded ${HC_CNTN_MAGIC}
+
+* start
+
+#+begin_src
+cd ~/Cardano/plutus-apps
+
+HC_STNCI=~/Cardano/plutus-pioneer-program-me/05-start-testnet-chain-index
+# syncing this takes time (maybe even longer than cardano-node)
+cabal exec plutus-chain-index -- --config ${HC_STNCI}/chain-index-config.json start-index >> /tmp/plutus-chain-index.log 2>&1 &
+#+end_src
+

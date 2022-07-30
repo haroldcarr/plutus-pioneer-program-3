@@ -110,18 +110,18 @@ TX="${TO_ADDR} ${AMOUNT} lovelace"
 
 cardano-cli transaction build                    \
   --alonzo-era                                   \
-  --testnet-magic    "${CNTN_MAGIC}"             \
+  --testnet-magic    "${HC_CNTN_MAGIC}"          \
   --change-address   "${CHANGE_ADDR}"            \
   --tx-in            "${IN}"                     \
   --tx-out           "${TX}"                     \
   --out-file         "${DIR}/${FILENAME}".body
 
 cardano-cli transaction sign                     \
-  --testnet-magic    "${CNTN_MAGIC}"             \
+  --testnet-magic    "${HC_CNTN_MAGIC}"          \
   --tx-body-file     "${DIR}/${FILENAME}".body   \
   --signing-key-file "${SKEY}"                   \
   --out-file         "${DIR}/${FILENAME}".signed
 
 cardano-cli transaction submit                   \
-  --testnet-magic    "${CNTN_MAGIC}"             \
+  --testnet-magic    "${HC_CNTN_MAGIC}"          \
   --tx-file          "${DIR}/${FILENAME}".signed
